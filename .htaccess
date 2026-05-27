@@ -1,5 +1,3 @@
-Options -Indexes
-
 # Protege arquivo de senha (gerado pelo setup.php)
 <Files ".htpasswd">
     Order allow,deny
