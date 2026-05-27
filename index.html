@@ -308,7 +308,8 @@ tr:hover td{background:#f8faff}
       <div><h2 id="tb-title">Dashboard</h2><p id="tb-sub">Visão geral das suas vendas</p></div>
       <div class="tb-actions">
         <span id="tb-date" style="font-size:.68rem;color:var(--muted);font-family:monospace"></span>
-        <button class="btn-s" onclick="loadOrders()">↻ Atualizar</button>
+        <button class="btn-s" onclick="loadOrders(10)">↻ Atualizar</button>
+        <button id="btn-historico" class="btn-s" onclick="loadOrders(60)" style="display:none" title="Carregar histórico completo">📅 60 dias</button>
       </div>
     </div>
     <div class="content">
@@ -319,7 +320,7 @@ tr:hover td{background:#f8faff}
           <div class="sc blue" style="animation-delay:.05s"><div class="lbl">Pedidos Hoje <span style="font-size:.9rem">📦</span></div><div class="val animated" id="sd-today" style="color:var(--accent)">—</div><div class="sub"><span class="bg p" id="sd-full">— Full</span><span class="bg g" id="sd-sep">— p/ sep.</span></div></div>
           <div class="sc green" style="animation-delay:.1s"><div class="lbl">Faturamento Hoje <span style="font-size:.9rem">💰</span></div><div class="val animated" id="sd-rev" style="font-size:1.2rem;color:var(--accent2)">—</div><div class="sub" id="sd-rev-sub">—</div></div>
           <div class="sc red" style="animation-delay:.15s"><div class="lbl">Ticket Médio <span style="font-size:.9rem">🎯</span></div><div class="val animated" id="sd-ticket" style="font-size:1.2rem;color:var(--accent3)">—</div><div class="sub">por pedido</div></div>
-          <div class="sc purple" style="animation-delay:.2s"><div class="lbl">Pedidos 30d <span style="font-size:.9rem">📅</span></div><div class="val animated" id="sd-30d" style="color:var(--purple)">—</div><div class="sub" id="sd-30d-sub">pedidos pagos</div></div>
+          <div class="sc purple" style="animation-delay:.2s"><div class="lbl">Pedidos <span id="sd-lbl-dias">10</span>d <span style="font-size:.9rem">📅</span></div><div class="val animated" id="sd-30d" style="color:var(--purple)">—</div><div class="sub" id="sd-30d-sub">pedidos pagos</div></div>
         </div>
         <div class="cr">
           <div class="cc"><h3>Volume de Pedidos — 30 dias</h3><div class="csub" id="chart-sub">—</div><div class="cw"><canvas id="ch-orders"></canvas></div></div>
@@ -488,11 +489,13 @@ function setProgress(msg){
   document.getElementById('o-body').innerHTML=ld;
 }
 
-async function loadOrders(){
+async function loadOrders(dias=10){
   setProgress('Iniciando carregamento...');
   document.getElementById('sep-body').innerHTML='<div class="ld"><div class="sp"></div>Aguardando pedidos...</div>';
+  const btnH=document.getElementById('btn-historico');
+  if(btnH)btnH.style.display='none';
   try{
-    const from=new Date(Date.now()-60*86400000).toISOString().split('T')[0]+'T00:00:00.000-03:00';
+    const from=new Date(Date.now()-dias*86400000).toISOString().split('T')[0]+'T00:00:00.000-03:00';
     let all=[],offset=0,total=999;
     while(offset<total){
       const data=await mlGet('/orders/search?seller='+userId+'&sort=date_desc&limit=50&offset='+offset+'&order.date_created.from='+encodeURIComponent(from));
@@ -504,9 +507,13 @@ async function loadOrders(){
       if(data.results.length<50)break;
     }
     allOrders=all;
+    window._diasCarregados=dias;
+    const lblDias=document.getElementById('sd-lbl-dias');
+    if(lblDias)lblDias.textContent=dias;
     setProgress('Carregando detalhes de envio ('+all.length+' pedidos)...');
     await loadShipments();
-    renderDash();renderOrders();// buildSep removido;buildInsights();
+    renderDash();renderOrders();buildInsights();
+    if(btnH&&dias<60){btnH.style.display='';btnH.textContent='📅 Carregar 60 dias (total: '+total+')';}
   }catch(e){
     const er='<div class="err-box" style="margin:1rem">Erro: '+e.message+'</div>';
     document.getElementById('d-orders').innerHTML=er;document.getElementById('o-body').innerHTML=er;
