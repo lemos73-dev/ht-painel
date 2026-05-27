@@ -489,31 +489,48 @@ function setProgress(msg){
   document.getElementById('o-body').innerHTML=ld;
 }
 
-async function loadOrders(dias=10){
-  setProgress('Iniciando carregamento...');
+async function loadOrders(dias=10, maxHist=200){
+  setProgress('Carregando pedidos de hoje...');
   document.getElementById('sep-body').innerHTML='<div class="ld"><div class="sp"></div>Aguardando pedidos...</div>';
   const btnH=document.getElementById('btn-historico');
   if(btnH)btnH.style.display='none';
   try{
-    const from=new Date(Date.now()-dias*86400000).toISOString().split('T')[0]+'T00:00:00.000-03:00';
-    let all=[],offset=0,total=999;
-    while(offset<total){
-      const data=await mlGet('/orders/search?seller='+userId+'&sort=date_desc&limit=50&offset='+offset+'&order.date_created.from='+encodeURIComponent(from));
-      if(!data.results||!data.results.length)break;
-      all=all.concat(data.results);
-      total=data.paging?.total||0;
-      offset+=50;
-      setProgress('Carregando pedidos... '+all.length+' de '+total);
-      if(data.results.length<50)break;
+    // 1. Carrega TODOS os pedidos de hoje (stats precisas)
+    const todayStr=new Date().toISOString().split('T')[0]+'T00:00:00.000-03:00';
+    let todayAll=[],tOff=0,tTot=9999;
+    while(tOff<tTot){
+      const d=await mlGet('/orders/search?seller='+userId+'&sort=date_desc&limit=50&offset='+tOff+'&order.date_created.from='+encodeURIComponent(todayStr));
+      if(!d.results?.length)break;
+      todayAll=todayAll.concat(d.results);
+      tTot=d.paging?.total||0;tOff+=50;
+      setProgress('Hoje: '+todayAll.length+' pedidos...');
+      if(d.results.length<50)break;
     }
-    allOrders=all;
-    window._diasCarregados=dias;
+    // 2. Carrega histórico recente (limitado)
+    const from=new Date(Date.now()-dias*86400000).toISOString().split('T')[0]+'T00:00:00.000-03:00';
+    let histAll=[],hOff=0,hTot=9999;
+    while(hOff<hTot&&histAll.length<maxHist){
+      const d=await mlGet('/orders/search?seller='+userId+'&sort=date_desc&limit=50&offset='+hOff+'&order.date_created.from='+encodeURIComponent(from));
+      if(!d.results?.length)break;
+      histAll=histAll.concat(d.results);
+      hTot=d.paging?.total||0;hOff+=50;
+      setProgress('Histórico: '+histAll.length+' / '+Math.min(maxHist,hTot)+'...');
+      if(d.results.length<50)break;
+    }
+    // Mescla sem duplicatas
+    const todayIds=new Set(todayAll.map(o=>o.id));
+    allOrders=[...todayAll,...histAll.filter(o=>!todayIds.has(o.id))];
+    window._diasCarregados=dias;window._totalDisponivel=hTot;
     const lblDias=document.getElementById('sd-lbl-dias');
     if(lblDias)lblDias.textContent=dias;
-    setProgress('Carregando detalhes de envio ('+all.length+' pedidos)...');
+    setProgress('Carregando envios...');
     await loadShipments();
     renderDash();renderOrders();buildInsights();
-    if(btnH&&dias<60){btnH.style.display='';btnH.textContent='📅 Carregar 60 dias (total: '+total+')';}
+    if(btnH&&maxHist<9999){
+      btnH.style.display='';
+      btnH.textContent='📅 Carregar todos ('+hTot+' pedidos)';
+      btnH.onclick=()=>loadOrders(dias,9999);
+    }
   }catch(e){
     const er='<div class="err-box" style="margin:1rem">Erro: '+e.message+'</div>';
     document.getElementById('d-orders').innerHTML=er;document.getElementById('o-body').innerHTML=er;
