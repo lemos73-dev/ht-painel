@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 // Apenas HTTPS
 if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
     http_response_code(403);
@@ -6,7 +8,7 @@ if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PRO
 }
 
 // Valida origem da requisicao
-$allowed = 'htembalagem.com.br';
+$allowed = ML_ALLOWED_DOMAIN;
 $referer = $_SERVER['HTTP_REFERER'] ?? '';
 $host    = $_SERVER['HTTP_HOST'] ?? '';
 if (!str_contains($referer, $allowed) && !str_contains($host, $allowed)) {

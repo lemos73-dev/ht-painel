@@ -1,6 +1,10 @@
 node_modules/
 package-lock.json
 
+# Arquivo com dados sensíveis — fica só no servidor, nunca no GitHub
+config.php
+.htpasswd
+
 # Arquivos só para uso local (não vão para o servidor)
 server.js
 package.json
