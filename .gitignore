@@ -1,0 +1,10 @@
+node_modules/
+package-lock.json
+
+# Arquivos só para uso local (não vão para o servidor)
+server.js
+package.json
+INICIAR.bat
+CONFIGURAR.bat
+netlify.toml
+netlify/
