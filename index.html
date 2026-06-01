@@ -207,6 +207,15 @@ tr:hover td{background:#f8faff}
 .promo-disc{background:rgba(63,185,80,.12);color:var(--accent2);border-radius:3px;padding:.1rem .35rem;font-size:.65rem;font-weight:600}
 .promo-price{font-family:'Roboto Mono',monospace;font-size:.72rem;color:var(--accent2)}
 .promo-original{font-family:'Roboto Mono',monospace;font-size:.68rem;color:var(--muted);text-decoration:line-through}
+/* MC BADGES */
+.mc-ex{padding:.15rem .45rem;border-radius:4px;font-size:.65rem;font-weight:700;background:#dcfce7;color:#15803d}
+.mc-bo{padding:.15rem .45rem;border-radius:4px;font-size:.65rem;font-weight:700;background:#dbeafe;color:#1d4ed8}
+.mc-re{padding:.15rem .45rem;border-radius:4px;font-size:.65rem;font-weight:700;background:#fef9c3;color:#a16207}
+.mc-ru{padding:.15rem .45rem;border-radius:4px;font-size:.65rem;font-weight:700;background:#fee2e2;color:#b91c1c}
+.mc-nd{padding:.15rem .45rem;border-radius:4px;font-size:.65rem;color:#94a3b8;background:#f1f5f9}
+.promo-ana-btn{font-size:.65rem;padding:.2rem .55rem;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#475569;cursor:pointer;transition:background .15s}
+.promo-ana-btn:hover{background:#f1f5f9}
+.promo-ana-box{margin-top:.5rem;border-top:1px solid #e2e8f0;display:none}
 /* MOBILE */
 @media(max-width:768px){
   #app-screen{flex-direction:column}
@@ -402,6 +411,11 @@ tr:hover td{background:#f8faff}
             <h3>🏷️ Promoções Ativas <span id="promo-count" style="color:var(--muted);font-weight:400;font-size:.72rem"></span></h3>
             <div class="acts">
               <span style="font-size:.65rem;color:var(--muted)">↑ ordenado por término</span>
+              <label style="font-size:.65rem;color:var(--muted);display:flex;align-items:center;gap:.3rem">
+                Comissão ML:
+                <input id="ml-comissao" type="number" min="1" max="30" step="0.1" value="12"
+                  style="width:3.2rem;padding:.15rem .3rem;border:1px solid var(--border);border-radius:4px;font-size:.65rem;text-align:center">%
+              </label>
               <button class="btn-s" onclick="loadPromocoes()">↻ Atualizar</button>
             </div>
           </div>
@@ -444,6 +458,50 @@ tr:hover td{background:#f8faff}
 const CLIENT_ID='6033160622171924',REDIRECT_URI='https://htembalagem.com.br/painel';
 let accessToken=localStorage.getItem('ml_token')||'',allOrders=[],allShipments={},userId='';
 const PM={dashboard:{t:'Dashboard',s:'Visão geral das suas vendas'},orders:{t:'Pedidos',s:'Todos os pedidos recentes'},sep:{t:'Lista de Separação',s:'Agência e Flex — excluindo Full'},insights:{t:'Insights',s:'Análise de vendas e produtos'},items:{t:'Produtos',s:'Catálogo de produtos ativos'},metricas:{t:'Métricas por Anúncio',s:'Análise de vendas por produto'},promocoes:{t:'Promoções',s:'Anúncios em promoção e oportunidades'}};
+const IMP_PADRAO=16.15;
+const CUSTOS_BASE={
+'LENVAB50CT':25.85,'LENVAB50':25.85,'FITMICBCWIL6':35.40,'SER0813MDX100':32.00,
+'ABSCRM12':72.00,'FITCRM510POR20':79.20,'FITCRM510POR10':39.60,'ABSCRM01':6.00,
+'SERDOSMDX3ML':22.50,'SERDSKCLL3ML':12.00,'ABSCRM03':17.76,'ABSCRM02':11.84,
+'FTCRM1010POR5':33.50,'FTCRM1010POR2':13.40,'FTCRM2510POR3':6.00,'FTCRM2510POR10':19.80,
+'FITCRM510POR5':19.80,'seringa':0.00,'COMEST13CRM50':57.00,'COMEST13CRM25':28.50,
+'COMEST13CRM30':34.20,'COMEST11CRM10':11.40,'AGURAQPRO25':54.00,'PAPTERSEN5':9.80,
+'ALGQUACRE600':58.20,'ALGQUACRE300':31.26,'ALGQUACRE200':20.80,'ALGQDRCRE200':20.80,
+'ALGQDRCRE100':9.70,'ESPKOLK150G':166.50,'ESPKOL10G':11.10,'BISSUPMDX11':14.62,
+'ESPKOLK50G':55.50,'KITSUTKOL2':82.04,'SERDSKCAT603UN':2.70,'ESPKOL1UNM':1.00,
+'EQPMCRMDX1':0.65,'EQPMCRMDX25':16.25,'EXTGAS1VIA10':21.50,'EQP2VIADSKP80':24.00,
+'KITSUTKOL1':41.02,'CATOCUMDX10':7.70,'CATOCUMDX20':15.40,'EQP2VIADSKP20':8.00,
+'EQPMCRDSKLL50':30.00,'EQPMCRDSKLL20':12.80,'ESPKOLEST10G':16.00,'AVDESML40G10':20.00,
+'AGURAKUNI100':463.00,'ESPKOLEST10P':11.60,'AGURAKUNI252270':343.50,'CATOCUDESK20':17.00,
+'ELEDSKP1K':172.00,'EQPMCRMDX10CT':6.50,'ELEDSKP100':17.20,'ELEDSKP500':86.10,
+'ELEDSKP200':34.40,'EQPMCRMDX10':6.50,'BOLCOLMDX1':2.90,'BOLCOLMDX2':5.80,
+'BOLCOLMDX10':29.00,'BOLCOLMDX5':14.50,'ELEMEDTR300':92.00,'CATOCUDESK10':8.50,
+'AGMDXH2570':6.37,'SERDOSMDX5ML':20.00,'SERMDXCAT60':22.50,'LENBACRMR2CT':59.00,
+'ALSWAUNI500':14.25,'FTCIRVF100MKt3':17.22,'EQPMCRMDX50':32.50,'EQPMCRMDX100':65.00,
+'CUPCMDXK500':8.75,'SE5MLLKMDX100':12.00,'MSKK959RB25':40.00,'AVMLDSTEE20':9.50,
+'AVMLDSTEE30':16.00,'AVSMAZDSTEE40':16.00,'TCADEEBCA100':5.30,'PPEDESKBCO100':6.00,
+'LEND70FC10':65.50,'SE3MLLKMDX100':11.00,'SE20MLLKMDX50':15.00,'SE10MLLKMDX100':19.00,
+'LEND50FC10':44.00,'SE3MLLKDSCK100':11.00,'LEND50FC10B':44.00,'LEND50FC05':22.00,
+'LEND50FC01':4.40,'ESPKOLK50P':50.39,'ESPKOLK50M':52.39,'AGMDXH4012CT':6.91,
+'CATPER22G100CT':66.96,'CATPER22G100':66.96,'AGURAKUNI25CT':115.75,'AGURAKUNI25':115.75,
+'FTCIRVF100MK1':5.74,'FTCIRVF100M1':5.74,'ELEMDX1K':162.08,'SERINSMDX100':22.00,
+'ELEMEDTR2K':610.00,'TOR3VHART100':150.00,'SERMDX3ML':11.00,'SERMDX20ML':15.00,
+'SERMDX10ML':19.00,'SERDSKCAT6':23.50,'PROT3M200':0.00,'PROMFMP500':55.00,
+'PROMFMP100CT':30.00,'PROMFMP100':15.00,'PPROTMAQ10C':15.90,'PPROTMAQ10':15.90,
+'POLIH2VIASHT100':150.00,'PLUCIFRO200':21.00,'PLUCIFRO100':21.00,'PLDHTK10':44.00,
+'PLDHT10':44.00,'MSKNSFLY1':54.55,'LENDHT50K10':44.00,'LEND70FC10B2':65.50,
+'LENBACRMR1':29.50,'GARMDX25':17.62,'FTCIRVF100MK6':33.00,'FTCIRVF100MK3':17.22,
+'FTCIRVF100MK02':11.48,'FIONYLMDX5V':21.00,'FIONYLMDX5':21.00,'FIONYLMDX4V':22.90,
+'FIONYLMDX3V':22.90,'FIONYLMDX3':22.90,'FIONYLMDX2V':22.90,'FIONYLMDX2':22.90,
+'EXTGAS1VIA100':215.00,'ESPKOL50P':49.44,'ESPKOL50M':57.86,'ESPKOL100P':97.00,
+'ESPKOL100M':101.00,'ESPKOL100G':111.00,'ELEMEDTR500':150.00,'ELEMEDTR200':60.00,
+'ELEMEDTR1K':305.00,'ELEMEDTR100':30.00,'ELEMDX500':82.04,'CUPCMDX500CT':8.75,
+'CUPCMDX500':8.75,'BISFEAN11':150.00,'BISDESK22SM':20.83,'BISDESK22100':20.83,
+'BISDESK15SM':20.83,'BISDESK15100':20.83,'BISDESK11SM':20.83,'BISDESK11100':20.83,
+'ALSWAUNI100k10':30.50,'ALSWAUNI100':3.05,'ALSWAk1000':28.50,'ALSWA400SP':11.40,
+'ALSWA1KSP':28.50,'AGMDXH4012':6.91,'AGMDXH2507':6.05,'AGMDXH2055':6.37,
+'AGMDXH1330':6.59,'ADPTSPROT250':74.00,'ADPTAGUCRAL250':27.00
+};
 
 function startOAuth(){window.location.href='https://auth.mercadolivre.com.br/authorization?response_type=code&client_id='+CLIENT_ID+'&redirect_uri='+encodeURIComponent(REDIRECT_URI);}
 
@@ -1044,6 +1102,102 @@ async function selectMetItem(itemId, el){
   });
 }
 
+// ── MARGEM DE CONTRIBUIÇÃO ────────────────────────────────────────────────────
+function calcMC(preco,sku,comissaoPct){
+  const custo=CUSTOS_BASE[sku];
+  if(custo===undefined||preco<=0)return null;
+  const mc=preco*(1-IMP_PADRAO/100-comissaoPct/100)-custo;
+  return{mc,pct:mc/preco*100};
+}
+function mcBadge(pct){
+  if(pct===null)return'<span class="mc-nd">sem custo</span>';
+  if(pct>=25)return'<span class="mc-ex">MC '+pct.toFixed(1)+'%</span>';
+  if(pct>=15)return'<span class="mc-bo">MC '+pct.toFixed(1)+'%</span>';
+  if(pct>=5) return'<span class="mc-re">MC '+pct.toFixed(1)+'%</span>';
+  return'<span class="mc-ru">MC '+pct.toFixed(1)+'%</span>';
+}
+
+async function analyzePromoItems(promoId,containerId){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  el.style.display='';
+  if(el.dataset.loaded==='1')return;
+  el.innerHTML='<div class="ld" style="padding:.7rem;justify-content:center"><div class="sp"></div>Buscando itens...</div>';
+  try{
+    const comissao=parseFloat(document.getElementById('ml-comissao')?.value||'12')||12;
+    // Busca itens da promoção (paginado)
+    let items=[],offset=0,total=9999;
+    while(offset<total){
+      const d=await mlGet('/seller-promotions/'+promoId+'/items?app_version=v2&limit=50&offset='+offset);
+      if(!d.results?.length)break;
+      items=items.concat(d.results);
+      total=d.paging?.total||0;offset+=50;
+      if(d.results.length<50)break;
+    }
+    if(!items.length){
+      el.innerHTML='<div style="padding:.6rem;font-size:.75rem;color:#64748b;text-align:center">Nenhum item encontrado nesta promoção.</div>';
+      el.dataset.loaded='1';return;
+    }
+    // Batch fetch detalhes (50 por vez)
+    const ids=items.map(i=>i.item_id||i.id).filter(Boolean);
+    let details=[];
+    for(let i=0;i<ids.length;i+=50){
+      const batch=ids.slice(i,i+50);
+      const d=await mlGet('/items?ids='+batch.join(',')+'&attributes=id,seller_sku,title,price,sale_price');
+      if(Array.isArray(d))details=details.concat(d);
+      else if(d&&d.id)details.push({code:200,body:d});
+    }
+    // Mapa id → dados
+    const detMap={};
+    details.forEach(d=>{const b=d.body||d;if(b&&b.id)detMap[b.id]=b;});
+    // Calcula MC por item
+    const rows=items.map(item=>{
+      const iid=item.item_id||item.id;
+      const det=detMap[iid]||{};
+      const sku=det.seller_sku||'';
+      const promoPrice=item.new_price||det.sale_price?.amount||det.price||0;
+      const origPrice=item.original_price||det.price||0;
+      const disc=item.discount_percentage||(origPrice&&promoPrice&&origPrice>promoPrice?Math.round((1-promoPrice/origPrice)*100):0);
+      const mc=calcMC(promoPrice,sku,comissao);
+      return{iid,sku,title:det.title||iid,promoPrice,origPrice,disc,mcPct:mc?mc.pct:null};
+    }).sort((a,b)=>(b.mcPct??-9999)-(a.mcPct??-9999));
+    // Renderiza
+    let h='<div style="padding:.45rem .55rem">';
+    h+='<div style="font-size:.62rem;color:#94a3b8;margin-bottom:.4rem">'+rows.length+' itens · ML '+comissao+'% · Imposto '+IMP_PADRAO+'% · ordenado por MC</div>';
+    // Legenda
+    h+='<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.4rem">';
+    h+='<span class="mc-ex">≥25% Excelente</span><span class="mc-bo">15-25% Boa</span><span class="mc-re">5-15% Regular</span><span class="mc-ru">&lt;5% Ruim</span>';
+    h+='</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:.22rem">';
+    rows.forEach(r=>{
+      h+='<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .4rem;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0">';
+      h+='<div style="flex:1;min-width:0">';
+      h+='<div style="font-size:.72rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0f172a">'+r.title+'</div>';
+      const discTxt=r.disc?'<span style="background:#fef9c3;color:#a16207;font-size:.6rem;padding:.1rem .3rem;border-radius:3px">-'+r.disc+'%</span> ':'';
+      h+='<div style="font-size:.62rem;color:#64748b;margin-top:.1rem">SKU: '+(r.sku||'—')+'&nbsp; '+discTxt+fmtBRL(r.promoPrice)+'</div>';
+      h+='</div>';
+      h+=mcBadge(r.mcPct);
+      h+='</div>';
+    });
+    h+='</div></div>';
+    el.innerHTML=h;
+    el.dataset.loaded='1';
+  }catch(e){
+    el.innerHTML='<div style="padding:.6rem;font-size:.75rem;color:#ef4444">Erro ao buscar itens: '+e.message+'</div>';
+  }
+}
+
+function togglePromoAna(promoId,containerId){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  if(el.dataset.loaded==='1'){
+    el.style.display=el.style.display==='none'?'':'none';
+  }else{
+    el.style.display='';
+    analyzePromoItems(promoId,containerId);
+  }
+}
+
 // ── PROMOÇÕES ─────────────────────────────────────────────────────────────────
 let promoData=[];
 
@@ -1128,10 +1282,17 @@ async function loadPromocoes(){
         h+='<div style="height:5px;width:'+pct+'%;background:'+barColor+';border-radius:3px;transition:width .3s"></div></div>';
         h+='<div style="font-size:.62rem;color:#64748b;font-family:monospace">'+sd+' → '+ed+' · <strong>'+pct+'%</strong> concluído</div>';
       }
+      // Botão de análise de margem
+      const cid='promo-ana-'+p.id;
+      h+='<div style="margin-top:.5rem;text-align:right">';
+      h+='<button class="promo-ana-btn" onclick="togglePromoAna(\''+p.id+'\',\''+cid+'\')">📊 Analisar margens</button>';
+      h+='</div>';
+      h+='<div id="'+cid+'" class="promo-ana-box"></div>';
       h+='</div>';
     });
     h+='</div>';
     document.getElementById('promo-ativos').innerHTML=h;
+    document.getElementById('promo-ativos').dataset.loaded='1';
 
     // Contagem de anúncios ativos
     const s1=await mlGet('/users/'+userId+'/items/search?status=active&limit=1');
@@ -1156,7 +1317,7 @@ function showPanel(n,el){
   document.getElementById('tb-sub').textContent=m.s||'';
   if(n==='dashboard')setTimeout(drawLineChart,100);
   if(n==='metricas'&&metItems.length===0)loadMetricas();
-  if(n==='promocoes'&&!document.getElementById('promo-ativos').innerHTML.includes('border-radius:10px'))loadPromocoes();
+  if(n==='promocoes'&&!document.getElementById('promo-ativos').dataset.loaded)loadPromocoes();
 }
 
 (function(){
