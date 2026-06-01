@@ -29,7 +29,7 @@ if (empty($token)) {
 
 // Valida e sanitiza o path da API
 $path = $_GET['path'] ?? '/users/me';
-if (!preg_match('#^/[a-zA-Z0-9/_\-?=&%.]+$#', $path)) {
+if (!preg_match('#^/[a-zA-Z0-9/_\-?=&%.,]+$#', $path)) {
     http_response_code(400);
     exit(json_encode(['error' => 'Path invalido']));
 }
