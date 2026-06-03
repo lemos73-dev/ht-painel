@@ -59,5 +59,19 @@ if ($error) {
     exit(json_encode(['error' => 'Erro de conexao com Mercado Livre']));
 }
 
+// Salva refresh_token no servidor para uso pelo cron de perguntas
+if ($httpCode === 200) {
+    $data = json_decode($response, true);
+    if (!empty($data['refresh_token'])) {
+        $tokenFile = dirname(dirname(__DIR__)) . '/ml_tokens.php';
+        $rt = addslashes($data['refresh_token']);
+        $uid = addslashes((string)($data['user_id'] ?? ''));
+        $ts  = date('Y-m-d H:i:s');
+        file_put_contents($tokenFile,
+            "<?php\ndefine('ML_REFRESH_TOKEN_STORED','$rt');\ndefine('ML_USER_ID_STORED','$uid');\ndefine('ML_TOKEN_SAVED_AT','$ts');\n"
+        );
+    }
+}
+
 http_response_code($httpCode);
 echo $response;
