@@ -1208,8 +1208,28 @@ async function loadItems(){
       allItems=allItems.concat((res||[]).map(r=>r.body).filter(Boolean));
       body.innerHTML='<div class="ld"><div class="sp"></div>Carregando produtos... '+allItems.length+' de '+allIds.length+'</div>';
     }
-    // Busca estoque Full real dos itens com inventory_id
-    const fullIts=allItems.filter(it=>it.inventory_id);
+    // Estoque Unificado (User Products): fonte de verdade por localização —
+    // seller_warehouse = estoque local, meli_facility = estoque Full
+    const upIts=allItems.filter(it=>it.user_product_id);
+    let doneUp=0;
+    for(let i=0;i<upIts.length;i+=10){
+      const batch=upIts.slice(i,i+10);
+      await Promise.all(batch.map(async it=>{
+        try{
+          const st=await mlGet('/user-products/'+it.user_product_id+'/stock');
+          let loc=0,full=null;
+          (st?.locations||[]).forEach(l=>{
+            if(l.type==='meli_facility')full=(full||0)+(l.quantity||0);
+            else loc+=l.quantity||0;
+          });
+          it._upLocal=loc;it._upFull=full;
+        }catch(e){}
+      }));
+      doneUp+=batch.length;
+      body.innerHTML='<div class="ld"><div class="sp"></div>Consultando estoque... '+doneUp+' de '+upIts.length+'</div>';
+    }
+    // Fallback p/ itens fulfillment sem User Product: estoque Full via inventories
+    const fullIts=allItems.filter(it=>it.inventory_id&&it._upFull===undefined&&it._upLocal===undefined);
     let done=0;
     for(let i=0;i<fullIts.length;i+=10){
       const batch=fullIts.slice(i,i+10);
@@ -1222,27 +1242,6 @@ async function loadItems(){
       }));
       done+=batch.length;
       body.innerHTML='<div class="ld"><div class="sp"></div>Consultando estoque Full... '+done+' de '+fullIts.length+'</div>';
-    }
-    // Estoque Unificado (User Products): contas migradas reportam available_quantity 0
-    // no anuncio — o estoque real fica em /user-products/{id}/stock por localizacao
-    const needUp=allItems.filter(it=>it.user_product_id&&!it.inventory_id
-      &&!(it.available_quantity>0)&&!(it.variations||[]).some(v=>v.available_quantity>0));
-    let doneUp=0;
-    for(let i=0;i<needUp.length;i+=10){
-      const batch=needUp.slice(i,i+10);
-      await Promise.all(batch.map(async it=>{
-        try{
-          const st=await mlGet('/user-products/'+it.user_product_id+'/stock');
-          let loc=0,full=0;
-          (st?.locations||[]).forEach(l=>{
-            if(l.type==='meli_facility')full+=l.quantity||0;
-            else loc+=l.quantity||0;
-          });
-          it._upLocal=loc;it._upFull=full;
-        }catch(e){}
-      }));
-      doneUp+=batch.length;
-      body.innerHTML='<div class="ld"><div class="sp"></div>Consultando estoque unificado... '+doneUp+' de '+needUp.length+'</div>';
     }
     const t=document.getElementById('alert-toggle');
     if(t){alertsEnabled?t.classList.add('on'):t.classList.remove('on');}
@@ -1258,18 +1257,22 @@ function renderItems(){
   const processed=allItems.map(it=>{
     const sku=getItemSku(it);
     const isFull=isFullItem(it);
-    // Anúncios com variações guardam o estoque dentro de variations
-    let lq=it.available_quantity;
-    if(!lq&&Array.isArray(it.variations)&&it.variations.length){
-      const vs=it.variations.reduce((s,v)=>s+(v.available_quantity||0),0);
-      if(vs>0)lq=vs;
+    let localQty,fullQty;
+    if(it._upLocal!==undefined){
+      // Estoque Unificado: a API já separa por localização
+      localQty=it._upLocal;       // seller_warehouse (seu depósito)
+      fullQty=it._upFull;         // meli_facility (null = sem cadastro no Full)
+    }else{
+      // Contas/itens não migrados: available_quantity (+ variações)
+      let lq=it.available_quantity;
+      if(!lq&&Array.isArray(it.variations)&&it.variations.length){
+        const vs=it.variations.reduce((s,v)=>s+(v.available_quantity||0),0);
+        if(vs>0)lq=vs;
+      }
+      if(isFull){localQty=null;fullQty=it._fullStock??lq??0;}
+      else{localQty=lq??0;fullQty=null;}
     }
-    // Estoque Unificado (User Products) — contas migradas
-    if(!lq&&it._upLocal!==undefined)lq=it._upLocal;
-    // Full: estoque real do fulfillment; Local: available_quantity do anúncio
-    const localQty=isFull?null:(lq??0);
-    const fullQty=isFull?(it._fullStock??it.available_quantity??0):(it._upFull>0?it._upFull:null);
-    const effQty=isFull?fullQty:(localQty+(fullQty||0));
+    const effQty=(localQty||0)+(fullQty||0);
     const alertClass=showAlerts?getAlertClass(effQty):'ok';
     if(alertClass==='red')redCount++;
     else if(alertClass==='yellow')yellowCount++;
