@@ -1132,27 +1132,57 @@ function getAlertClass(qty){
   return'ok';
 }
 
+function getItemSku(it){
+  if(it.seller_custom_field)return it.seller_custom_field;
+  const a=(it.attributes||[]).find(x=>x.id==='SELLER_SKU');
+  if(a&&(a.value_name||a.values?.[0]?.name))return a.value_name||a.values[0].name;
+  return it.seller_sku||'—';
+}
+
+function isFullItem(it){
+  return it.shipping?.logistic_type==='fulfillment'||!!it.inventory_id;
+}
+
 async function loadItems(){
-  document.getElementById('it-body').innerHTML='<div class="ld"><div class="sp"></div>Carregando produtos...</div>';
+  const body=document.getElementById('it-body');
+  body.innerHTML='<div class="ld"><div class="sp"></div>Carregando produtos...</div>';
   try{
-    let allIds=[];
-    const s1=await mlGet('/users/'+userId+'/items/search?status=active&limit=100');
-    allIds=allIds.concat(s1.results||[]);
-    if((s1.paging?.total||0)>100){
-      const s2=await mlGet('/users/'+userId+'/items/search?status=active&limit=100&offset=100');
-      allIds=allIds.concat(s2.results||[]);
+    // Paginação completa dos IDs ativos
+    let allIds=[],offset=0,total=9999;
+    while(offset<total&&offset<1000){
+      const s=await mlGet('/users/'+userId+'/items/search?status=active&limit=100&offset='+offset);
+      if(!s.results?.length)break;
+      allIds=allIds.concat(s.results);
+      total=s.paging?.total||0;offset+=100;
+      if(s.results.length<100)break;
     }
-    if(!allIds.length){document.getElementById('it-body').innerHTML='<div class="emp"><div class="ei">🏷️</div>Nenhum produto ativo</div>';return;}
+    if(!allIds.length){body.innerHTML='<div class="emp"><div class="ei">🏷️</div>Nenhum produto ativo</div>';return;}
     allItems=[];
     for(let i=0;i<allIds.length;i+=20){
       const batch=allIds.slice(i,i+20);
       const res=await mlGet('/items?ids='+batch.join(','));
       allItems=allItems.concat((res||[]).map(r=>r.body).filter(Boolean));
+      body.innerHTML='<div class="ld"><div class="sp"></div>Carregando produtos... '+allItems.length+' de '+allIds.length+'</div>';
+    }
+    // Busca estoque Full real dos itens com inventory_id
+    const fullIts=allItems.filter(it=>it.inventory_id);
+    let done=0;
+    for(let i=0;i<fullIts.length;i+=10){
+      const batch=fullIts.slice(i,i+10);
+      await Promise.all(batch.map(async it=>{
+        try{
+          const inv=await mlGet('/inventories/'+it.inventory_id+'/stock/fulfillment');
+          it._fullStock=inv?.available_quantity??null;
+          it._fullNotAvail=inv?.not_available_quantity??0;
+        }catch(e){it._fullStock=null;}
+      }));
+      done+=batch.length;
+      body.innerHTML='<div class="ld"><div class="sp"></div>Consultando estoque Full... '+done+' de '+fullIts.length+'</div>';
     }
     const t=document.getElementById('alert-toggle');
     if(t){alertsEnabled?t.classList.add('on'):t.classList.remove('on');}
     renderItems();
-  }catch(e){document.getElementById('it-body').innerHTML='<div class="err-box" style="margin:1rem">Erro: '+e.message+'</div>';}
+  }catch(e){body.innerHTML='<div class="err-box" style="margin:1rem">Erro: '+e.message+'</div>';}
 }
 
 function renderItems(){
@@ -1161,14 +1191,16 @@ function renderItems(){
   const showAlerts=alertsEnabled;
   let redCount=0,yellowCount=0;
   const processed=allItems.map(it=>{
-    const sku=it.seller_custom_field||it.seller_sku||'—';
-    const qty=it.available_quantity??0;
-    // Estoque Full via inventory_id ou fulfillment
-    const fullQty=it.catalog_listing?'Full':'—';
-    const alertClass=showAlerts?getAlertClass(qty):'ok';
+    const sku=getItemSku(it);
+    const isFull=isFullItem(it);
+    // Full: estoque real do fulfillment; Local: available_quantity do anúncio
+    const localQty=isFull?null:(it.available_quantity??0);
+    const fullQty=isFull?(it._fullStock??it.available_quantity??0):null;
+    const effQty=isFull?fullQty:localQty;
+    const alertClass=showAlerts?getAlertClass(effQty):'ok';
     if(alertClass==='red')redCount++;
     else if(alertClass==='yellow')yellowCount++;
-    return{...it,sku,qty,fullQty,alertClass};
+    return{...it,sku,isFull,localQty,fullQty,effQty,alertClass};
   });
   // Badge no menu
   const badge=document.getElementById('stock-badge');
@@ -1187,9 +1219,10 @@ function renderItems(){
   if(filter==='alert')filtered=processed.filter(i=>i.alertClass!=='ok');
   else if(filter==='red')filtered=processed.filter(i=>i.alertClass==='red');
   else if(filter==='yellow')filtered=processed.filter(i=>i.alertClass==='yellow');
-  filtered.sort((a,b)=>({'red':0,'yellow':1,'ok':2}[a.alertClass]||2)-({'red':0,'yellow':1,'ok':2}[b.alertClass]||2));
+  const ord={'red':0,'yellow':1,'ok':2};
+  filtered.sort((a,b)=>(ord[a.alertClass]-ord[b.alertClass])||((a.effQty??999)-(b.effQty??999)));
   if(!filtered.length){document.getElementById('it-body').innerHTML='<div class="emp"><div class="ei">✅</div>Nenhum produto neste filtro</div>';return;}
-  let h='<table><thead><tr><th>Produto</th><th>SKU</th><th>Preço</th><th>Est. Local</th><th>Est. Full</th><th>Alerta</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Produto</th><th>SKU</th><th>Preço</th><th style="text-align:center">Est. Local</th><th style="text-align:center">Est. Full</th><th>Alerta</th></tr></thead><tbody>';
   filtered.forEach(it=>{
     const ac2=showAlerts?it.alertClass:'ok';
     const rowCls=ac2==='red'?' class="row-alert-red"':ac2==='yellow'?' class="row-alert-yellow"':'';
@@ -1199,9 +1232,20 @@ function renderItems(){
     h+='<td style="font-size:.74rem">'+(it.title||'').substring(0,55)+'</td>';
     h+='<td style="font-family:\'DM Mono\',monospace;color:var(--accent);font-size:.68rem">'+it.sku+'</td>';
     h+='<td style="font-family:\'DM Mono\',monospace;color:var(--accent2)">'+fmtBRL(it.price||0)+'</td>';
-    h+='<td class="stock-local'+sCls+'">'+it.qty+dot+'</td>';
-    h+='<td class="stock-full">'+it.fullQty+'</td>';
-    h+='<td>'+(ac2==='red'?'<span class="tag cancelled">CRÍTICO ≤5</span>':ac2==='yellow'?'<span class="tag pending">ATENÇÃO ≤10</span>':'<span class="tag paid">OK</span>')+'</td>';
+    // Estoque Local (anúncios normais)
+    if(it.localQty!==null){
+      h+='<td class="stock-local'+sCls+'" style="text-align:center;font-weight:700">'+it.localQty+dot+'</td>';
+    }else{
+      h+='<td style="text-align:center;color:var(--muted2)">—</td>';
+    }
+    // Estoque Full (anúncios fulfillment)
+    if(it.fullQty!==null){
+      h+='<td class="stock-full'+sCls+'" style="text-align:center;font-weight:700">📦 '+it.fullQty+dot+(it._fullNotAvail?'<span style="font-size:.6rem;color:var(--muted);font-weight:400" title="indisponível/em trânsito"> (+'+it._fullNotAvail+')</span>':'')+'</td>';
+    }else{
+      h+='<td style="text-align:center;color:var(--muted2)">—</td>';
+    }
+    const acabou=(it.effQty??0)<=0;
+    h+='<td>'+(acabou?'<span class="tag cancelled">ESGOTADO</span>':ac2==='red'?'<span class="tag cancelled">CRÍTICO ≤5</span>':ac2==='yellow'?'<span class="tag pending">ATENÇÃO ≤10</span>':'<span class="tag paid">OK</span>')+'</td>';
     h+='</tr>';
   });
   h+='</tbody></table>';
