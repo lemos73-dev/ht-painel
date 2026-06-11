@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HT Hospitalar — Painel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&family=Roboto+Condensed:wght@700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -243,6 +244,8 @@ tr:hover td{background:#f8faff}
   table{font-size:.7rem}
   th,td{padding:.45rem .6rem}
   .sep-tb{gap:.4rem}
+  .sep-zones{grid-template-columns:1fr}
+  .sep-srch{width:120px}
   .it-toolbar{flex-direction:column;align-items:flex-start;gap:.4rem}
   .it-acts{flex-wrap:wrap;gap:.3rem}
   .tc-h{flex-direction:column;align-items:flex-start;gap:.4rem}
@@ -253,6 +256,36 @@ tr:hover td{background:#f8faff}
   .sc .val{font-size:1.4rem}
   th:nth-child(1),td:nth-child(1){display:none}
 }
+
+/* SEPARAÇÃO — upload PDFs e lista interativa */
+.sep-zones{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.6rem}
+.sep-zone{border:2px dashed var(--border);border-radius:10px;padding:.9rem;text-align:center;cursor:pointer;background:var(--surface);transition:all .2s;font-size:.72rem;color:var(--muted)}
+.sep-zone:hover,.sep-zone.drag{border-color:var(--accent);background:var(--glow-blue)}
+.sep-zone.ok{border-style:solid;border-color:var(--accent2);background:var(--glow-green)}
+.sep-zone .bz{display:inline-block;font-size:.58rem;font-weight:700;padding:.15rem .55rem;border-radius:10px;margin-bottom:.3rem;letter-spacing:.5px}
+.bz-ml{background:#fef3c7;color:#92400e}
+.bz-sh{background:#fee2e2;color:#b91c1c}
+.sep-zone .fn{font-size:.68rem;color:var(--accent2);font-weight:700;margin-top:.35rem;min-height:.9rem}
+tr.sep-ok td{opacity:.4}
+tr.sep-ok td.sep-prod-td{text-decoration:line-through}
+.sep-fld{width:100%;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-size:.7rem;padding:.15rem .2rem;outline:none;font-family:'Roboto Mono',monospace;color:var(--text)}
+.sep-fld:focus{border-color:var(--accent)}
+.sep-cb{width:16px;height:16px;cursor:pointer;accent-color:var(--accent2)}
+.sep-srch{padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:.72rem;outline:none;width:170px;background:var(--surface)}
+.sep-srch:focus{border-color:var(--accent)}
+.sep-prog{font-size:.7rem;font-weight:700;font-family:'Roboto Mono',monospace;color:var(--accent2);background:var(--glow-green);border:1px solid rgba(16,185,129,.25);padding:.2rem .6rem;border-radius:12px}
+.so{display:inline-block;font-size:.58rem;font-weight:700;padding:.1rem .35rem;border-radius:3px;margin-left:.25rem}
+.so-ml{background:#fef3c7;color:#92400e}
+.so-sh{background:#fee2e2;color:#b91c1c}
+.sep-extra{background:var(--surface);border:2px dashed var(--yellow);border-radius:10px;padding:.8rem 1rem;margin-top:.8rem}
+.sep-extra .et{font-size:.65rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
+.sep-erow{display:flex;gap:.4rem;align-items:center;margin-bottom:.35rem}
+.sep-erow input{flex:1;padding:.3rem .5rem;border:1px solid var(--border);border-radius:5px;font-size:.7rem;outline:none}
+.sep-erow input:focus{border-color:var(--accent)}
+.sep-erow .wsm{flex:0 0 90px}
+.sep-addbtn{width:100%;padding:.35rem;border:1.5px dashed var(--border);background:none;border-radius:5px;cursor:pointer;font-size:.7rem;color:var(--muted)}
+.sep-addbtn:hover{border-color:var(--accent);color:var(--accent)}
+.sep-delbtn{background:none;border:none;cursor:pointer;color:var(--accent3);font-size:1rem;padding:0 .2rem;line-height:1}
 
 /* PRINT */
 @media print{
@@ -265,6 +298,12 @@ tr:hover td{background:#f8faff}
   th{background:#f5f5f5;color:#333}
   td{border-color:#ddd;color:#000}
   .ph{display:block!important}
+  #sep-pdf-zone,.sep-srch,.sep-noprint,.sep-delbtn,.sep-addbtn{display:none!important}
+  .sep-fld{border-bottom:1px solid #999}
+  .sep-erow input{border:none;border-bottom:1px solid #999;border-radius:0}
+  .sep-extra{border:1px solid #999;border-radius:0;page-break-inside:avoid}
+  tr{page-break-inside:avoid}
+  tr.sep-ok td{opacity:1;text-decoration:none}
 }
 .ph{display:none;margin-bottom:.8rem;padding-bottom:.4rem;border-bottom:2px solid #000;font-weight:700;font-size:.95rem}
 </style>
@@ -347,15 +386,47 @@ tr:hover td{background:#f8faff}
       <div id="panel-sep" class="panel">
         <div class="ph" id="ph">Lista de Separação — HT Hospitalar</div>
         <div class="sep-tb">
-          <button class="btn-s ac" onclick="fetchReadyToPrint()" id="btn-fetch-sep">🔍 Buscar Pedidos Prontos</button>
+          <button class="btn-s ac" onclick="fetchReadyToPrint()" id="btn-fetch-sep">🔍 Buscar Prontos (ML)</button>
+          <button class="btn-s" onclick="sepTogglePdf()" id="btn-pdf-sep">📄 Importar PDFs</button>
           <button class="btn-s" onclick="window.print()" id="btn-print-sep" style="display:none">🖨️ Imprimir Lista</button>
           <span id="sep-status" style="font-size:.72rem;color:var(--muted);font-family:'Roboto Mono',monospace"></span>
+        </div>
+        <div id="sep-pdf-zone" style="display:none">
+          <div class="sep-zones">
+            <div>
+              <div class="sep-zone" id="sz-ml"
+                onclick="document.getElementById('sf-ml').click()"
+                ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')"
+                ondrop="event.preventDefault();this.classList.remove('drag');sepSelFile({files:event.dataTransfer.files},'ml')">
+                <div class="bz bz-ml">MERCADO LIVRE</div>
+                <div style="font-weight:700;color:var(--text)">Lista de Identificação ML (PDF)</div>
+                <div>Clique ou arraste o PDF aqui</div>
+                <div class="fn" id="sfn-ml"></div>
+              </div>
+              <input type="file" id="sf-ml" accept=".pdf" style="display:none" onchange="sepSelFile(this,'ml')">
+            </div>
+            <div>
+              <div class="sep-zone" id="sz-bling"
+                onclick="document.getElementById('sf-bling').click()"
+                ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')"
+                ondrop="event.preventDefault();this.classList.remove('drag');sepSelFile({files:event.dataTransfer.files},'bling')">
+                <div class="bz bz-sh">BLING / SHOPEE</div>
+                <div style="font-weight:700;color:var(--text)">Relatório de Vendas Bling (PDF)</div>
+                <div>Clique ou arraste o PDF aqui</div>
+                <div class="fn" id="sfn-bling"></div>
+              </div>
+              <input type="file" id="sf-bling" accept=".pdf" style="display:none" onchange="sepSelFile(this,'bling')">
+            </div>
+          </div>
+          <div style="text-align:center;margin-bottom:.8rem">
+            <button class="btn-s ac" id="btn-sep-gen" onclick="sepGeneratePdf()" disabled style="opacity:.4">▶ Gerar Lista dos PDFs</button>
+          </div>
         </div>
         <div id="sep-body">
           <div class="emp" style="padding:3rem">
             <div class="ei">📋</div>
             <p style="font-weight:600;margin-bottom:.4rem">Lista de Separação</p>
-            <p style="font-size:.78rem;color:var(--muted)">Clique em "Buscar Pedidos Prontos" para carregar os pedidos com etiqueta pronta para impressão</p>
+            <p style="font-size:.78rem;color:var(--muted)">Use "Buscar Prontos (ML)" para pedidos com etiqueta pronta via API,<br>ou "Importar PDFs" para gerar a lista combinada Mercado Livre + Shopee</p>
           </div>
         </div>
       </div>
@@ -455,6 +526,7 @@ tr:hover td{background:#f8faff}
 </div>
 
 <script>
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='';
 const CLIENT_ID='6033160622171924',REDIRECT_URI='https://htembalagem.com.br/painel';
 let accessToken=localStorage.getItem('ml_token')||'',allOrders=[],allShipments={},userId='';
 const PM={dashboard:{t:'Dashboard',s:'Visão geral das suas vendas'},orders:{t:'Pedidos',s:'Todos os pedidos recentes'},sep:{t:'Lista de Separação',s:'Agência e Flex — excluindo Full'},insights:{t:'Insights',s:'Análise de vendas e produtos'},items:{t:'Produtos',s:'Catálogo de produtos ativos'},metricas:{t:'Métricas por Anúncio',s:'Análise de vendas por produto'},promocoes:{t:'Promoções',s:'Anúncios em promoção e oportunidades'}};
@@ -549,7 +621,6 @@ function setProgress(msg){
 
 async function loadOrders(dias=10, maxHist=200){
   setProgress('Carregando pedidos de hoje...');
-  document.getElementById('sep-body').innerHTML='<div class="ld"><div class="sp"></div>Aguardando pedidos...</div>';
   const btnH=document.getElementById('btn-historico');
   if(btnH)btnH.style.display='none';
   try{
@@ -758,16 +829,16 @@ function renderOrders(){
   h+='</tbody></table>';document.getElementById('o-body').innerHTML=h;
 }
 
+// ── SEPARAÇÃO — fonte API ML + importação de PDFs (ML + Bling/Shopee) ─────────
+let sepFiles={ml:null,bling:null};
+
 async function fetchReadyToPrint(){
   const btn=document.getElementById('btn-fetch-sep');
-  const printBtn=document.getElementById('btn-print-sep');
   const status=document.getElementById('sep-status');
   btn.disabled=true;btn.textContent='⏳ Buscando...';
-  printBtn.style.display='none';
+  document.getElementById('btn-print-sep').style.display='none';
   document.getElementById('sep-body').innerHTML='<div class="ld"><div class="sp"></div>Buscando pedidos com etiqueta pronta...</div>';
-
   try{
-    // Busca todos os pedidos com ready_to_print
     let readyOrders=[];
     let offset=0,total=999;
     while(offset<total){
@@ -779,103 +850,253 @@ async function fetchReadyToPrint(){
       status.textContent='Carregando... '+readyOrders.length+' de '+total;
       if(data.results.length<50)break;
     }
-
     status.textContent=readyOrders.length+' pedidos prontos encontrados';
-    btn.disabled=false;btn.textContent='🔍 Atualizar';
-
+    btn.disabled=false;btn.textContent='🔍 Atualizar (ML)';
     if(!readyOrders.length){
       document.getElementById('sep-body').innerHTML='<div class="emp" style="padding:3rem"><div class="ei">✅</div><p style="font-weight:600">Nenhum pedido pronto para separação</p><p style="font-size:.78rem;color:var(--muted);margin-top:.3rem">Todos os pedidos já foram processados ou aguardam NF</p></div>';
       return;
     }
-
-    renderSep(readyOrders);
-    printBtn.style.display='inline-block';
+    const itens=[];
+    readyOrders.forEach(o=>(o.order_items||[]).forEach(it=>{
+      itens.push({sku:it.item?.seller_sku||it.item?.id||'SEM-SKU',produto:it.item?.title||'Produto',qtd:it.quantity||1,origem:'ML'});
+    }));
+    sepRender(itens,readyOrders.length+' pedidos · etiqueta pronta (API ML)');
   }catch(e){
-    btn.disabled=false;btn.textContent='🔍 Buscar Pedidos Prontos';
+    btn.disabled=false;btn.textContent='🔍 Buscar Prontos (ML)';
     document.getElementById('sep-body').innerHTML='<div style="margin:1rem;padding:.8rem;background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;color:#ef4444;font-size:.78rem">Erro: '+e.message+'</div>';
   }
 }
 
-function renderSep(orders){
-    // Agrupa por SKU
-  const sm={};
-  orders.forEach(o=>(o.order_items||[]).forEach(item=>{
-    const sku=item.item?.seller_sku||item.item?.id||'SEM-SKU';
-    const title=item.item?.title||'Produto';
-    const qty=item.quantity||1;
-    if(!sm[sku])sm[sku]={sku,title,qty:0};
-    sm[sku].qty+=qty;
-  }));
-  const items=Object.values(sm).sort((a,b)=>b.qty-a.qty);
+// ── Importação de PDFs ──
+function sepTogglePdf(){
+  const z=document.getElementById('sep-pdf-zone');
+  z.style.display=z.style.display==='none'?'':'none';
+}
+
+function sepSelFile(inp,key){
+  const f=inp.files&&inp.files[0];
+  if(!f)return;
+  sepFiles[key]=f;
+  document.getElementById('sz-'+key).classList.add('ok');
+  document.getElementById('sfn-'+key).textContent='✔ '+f.name;
+  const btn=document.getElementById('btn-sep-gen');
+  btn.disabled=false;btn.style.opacity='1';
+}
+
+async function sepExtractPdf(file){
+  const ab=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  const out=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    const pg=await pdf.getPage(i);
+    const tc=await pg.getTextContent();
+    const lm={};
+    tc.items.forEach(it=>{
+      const y=Math.round(it.transform[5]);
+      (lm[y]||(lm[y]=[])).push(it);
+    });
+    Object.keys(lm).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const txt=lm[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(x=>x.str).join(' ').trim();
+      if(txt)out.push(txt);
+    });
+  }
+  return out;
+}
+
+// Parser PDF "Lista de Identificação" do Mercado Livre
+function sepParseML(lines){
+  const items=[];
+  for(let i=0;i<lines.length;i++){
+    const sm=lines[i].match(/SKU:\s*([A-Za-z0-9_-]{3,30})/);
+    if(!sm)continue;
+    const sku=sm[1].toUpperCase();
+    // Quantidade: na própria linha ou nas 4 seguintes (para na próxima entrada)
+    let qtd=1;
+    for(let qi=i;qi<Math.min(i+5,lines.length);qi++){
+      const qm=lines[qi].match(/Quantidade:\s*(\d+)/);
+      if(qm){qtd=parseInt(qm[1]);break;}
+      if(qi>i&&/SKU:/.test(lines[qi]))break;
+    }
+    // Produto: primeira linha válida acima do SKU
+    let produto='';
+    for(let pi=i-1;pi>=Math.max(0,i-8);pi--){
+      const pl=(lines[pi]||'').trim();
+      if(!pl)continue;
+      if(/SKU:/.test(pl))break;
+      if(/^(Identif|Despachem)/i.test(pl))break;
+      if(/Quantidade:\s*\d+/.test(pl))break;
+      if(/^(Pack ID:|Venda:)/i.test(pl))continue;
+      if(/^\d{8,}$/.test(pl))continue;            // ID numérico puro
+      if(/^[A-Z0-9]{10,}$/.test(pl))continue;     // ID de envio puro
+      const idm=pl.match(/^(?:\d{8,}|[A-Z0-9]{10,})\s+(.+)$/);
+      produto=(idm?idm[1]:pl).trim();
+      break;
+    }
+    produto=produto.replace(/\s*(Tamanho|Quantidade|Cor|Tipo de embalagem|Voltagem):.*$/i,'').trim();
+    items.push({sku,produto:produto||sku,qtd,origem:'ML'});
+  }
+  return items;
+}
+
+// Parser PDF "Relatório de Vendas" do Bling (pedidos Shopee)
+function sepParseBling(lines){
+  const SKIP=/^(Ht |CNPJ|Rua |S.o Paulo - SP|Relat|M.s:|Situa|Cliente\b|Produto\b|C.digo\b|Qtde\b|Pre.o|Valor\b|Frete\b|Desconto\b|Outras\b|Totais?\b|faturada|M.dio|faturado|desp)/i;
+  const items=[],hits=[];
+  for(let i=0;i<lines.length;i++){
+    if(/^Totais/i.test(lines[i]))continue;
+    const m=lines[i].match(/\b([A-Z][A-Za-z0-9]{4,25})\s+(\d+),\d{2}\s+\d+,\d{2}/);
+    if(m)hits.push({idx:i,sku:m[1].toUpperCase(),qtd:parseInt(m[2]),ms:lines[i].indexOf(m[0])});
+  }
+  hits.forEach((h,si)=>{
+    const prevEnd=si>0?hits[si-1].idx:-1;
+    const block=lines.slice(prevEnd+1,h.idx);
+    // Última linha de cidade (Cidade/UF) antes do SKU — o que vem depois é produto
+    let cityIdx=-1;
+    for(let bi=block.length-1;bi>=0;bi--){
+      if(/\/[A-Z]{2}\b/.test(block[bi])){cityIdx=bi;break;}
+    }
+    const pp=[];
+    for(let pi=cityIdx+1;pi<block.length;pi++){
+      const bl=(block[pi]||'').trim();
+      if(!bl||SKIP.test(bl))continue;
+      if(/\d+,\d{2}\s+\d+,\d{2}/.test(bl))continue;  // linha de valores
+      if(/\b\d{8,11}\b/.test(bl))continue;            // CPF
+      if(/^Quantidade:/i.test(bl))continue;
+      pp.push(bl);
+    }
+    // Texto antes do SKU na própria linha
+    const before=lines[h.idx].substring(0,h.ms).trim();
+    if(before&&!SKIP.test(before))pp.push(before);
+    // Continuação do nome APÓS a linha do SKU (até 3 linhas)
+    for(let ai=h.idx+1;ai<Math.min(h.idx+4,lines.length);ai++){
+      const al=(lines[ai]||'').trim();
+      if(!al||SKIP.test(al))break;
+      if(/\d+,\d{2}\s+\d+,\d{2}/.test(al))break;
+      if(/\b\d{8,11}\b/.test(al))break;
+      if(/\/[A-Z]{2}\b/.test(al))break;
+      if(/-\s*$/.test(al))break;                      // "Nome Cliente -"
+      if(/^(Quantidade|Kits?\s*Kits?|Tamanho|Cor)\s*:/i.test(al))break;
+      // aceita só continuações claras de produto (com número/medida) ou palavra única
+      if(!/\d/.test(al)&&al.split(/\s+/).length>1)break;
+      pp.push(al);
+    }
+    const produto=pp.join(' ').replace(/\s*(Tamanho|Quantidade|Cor|Tipo de embalagem|Voltagem|Kits)\s*:.*$/i,'').trim();
+    items.push({sku:h.sku,produto:produto||h.sku,qtd:h.qtd,origem:'Shopee'});
+  });
+  return items;
+}
+
+async function sepGeneratePdf(){
+  const btn=document.getElementById('btn-sep-gen');
+  const status=document.getElementById('sep-status');
+  btn.disabled=true;btn.textContent='⏳ Processando...';
+  try{
+    const itens=[];
+    let nML=0,nSH=0;
+    if(sepFiles.ml){
+      status.textContent='Lendo PDF Mercado Livre...';
+      const t=await sepExtractPdf(sepFiles.ml);
+      const p=sepParseML(t);nML=p.length;itens.push(...p);
+    }
+    if(sepFiles.bling){
+      status.textContent='Lendo PDF Bling/Shopee...';
+      const t=await sepExtractPdf(sepFiles.bling);
+      const p=sepParseBling(t);nSH=p.length;itens.push(...p);
+    }
+    btn.disabled=false;btn.textContent='▶ Gerar Lista dos PDFs';
+    if(!itens.length){
+      status.textContent='Nenhum item encontrado nos PDFs.';
+      return;
+    }
+    status.textContent=nML+' itens ML + '+nSH+' itens Shopee';
+    const parts=[];
+    if(nML)parts.push(nML+' pedidos ML');
+    if(nSH)parts.push(nSH+' pedidos Shopee');
+    sepRender(itens,parts.join(' + ')+' (PDFs)');
+    document.getElementById('sep-pdf-zone').style.display='none';
+  }catch(e){
+    btn.disabled=false;btn.textContent='▶ Gerar Lista dos PDFs';
+    status.textContent='Erro: '+e.message;
+  }
+}
+
+// ── Consolidação e renderização unificada ──
+function sepConsolidate(items){
+  const map={};
+  items.forEach(it=>{
+    const k=it.sku;
+    if(!map[k])map[k]={sku:k,produto:'',qtd:0,pedidos:0,ml:0,sh:0};
+    map[k].qtd+=it.qtd;
+    map[k].pedidos++;
+    if(it.origem==='Shopee')map[k].sh+=it.qtd;else map[k].ml+=it.qtd;
+    if((it.produto||'').length>map[k].produto.length&&it.produto!==k)map[k].produto=it.produto;
+  });
+  return Object.values(map).sort((a,b)=>b.qtd-a.qtd);
+}
+
+function sepRender(items,label){
+  const groups=sepConsolidate(items);
   const now=new Date().toLocaleDateString('pt-BR');
+  const totalItens=groups.reduce((s,g)=>s+g.qtd,0);
+  const mixed=groups.some(g=>g.ml>0)&&groups.some(g=>g.sh>0);
   document.getElementById('ph').textContent='Lista de Separação — HT Hospitalar — '+now;
-  if(!items.length){document.getElementById('sep-body').innerHTML='<div class="emp"><div class="ei">✅</div>Nenhum pedido para separar.</div>';return;}
-  let h='<div class="tc"><div class="tc-h"><h3>'+now+'&nbsp;<span style="color:var(--accent);font-weight:400;font-size:.75rem">'+orders.length+' pedidos · '+items.length+' SKUs</span></h3><button class="btn-s ac" onclick="window.print()">🖨️ Imprimir</button></div>';
-  h+='<table><thead><tr><th>#</th><th>SKU</th><th>Produto</th><th style="text-align:center">Qtd</th><th>Lote</th><th style="text-align:center">✓</th></tr></thead><tbody>';
-  items.forEach((it,i)=>{
-    const qtyColor=it.qty>=10?'#ef4444':it.qty>=5?'#f59e0b':'#10b981';
-    h+='<tr style="'+(i%2?'background:#f8fafc':'')+'">';
+  document.getElementById('btn-print-sep').style.display='inline-block';
+  let h='<div class="tc"><div class="tc-h"><h3>'+now+' <span style="color:var(--accent);font-weight:400;font-size:.72rem">'+label+' · '+groups.length+' SKUs · '+totalItens+' itens</span></h3>';
+  h+='<div class="acts sep-noprint"><input class="sep-srch" type="text" placeholder="🔎 filtrar SKU/produto..." oninput="sepFilter(this.value)"><span class="sep-prog" id="sep-prog">0/'+groups.length+'</span><button class="btn-s ac" onclick="window.print()">🖨️ Imprimir</button></div></div>';
+  h+='<table id="sep-table"><thead><tr><th>#</th><th>SKU</th><th>Produto</th><th style="text-align:center">Qtd</th>'+(mixed?'<th style="text-align:center">Origem</th>':'')+'<th style="width:120px">Lote</th><th style="width:100px">Obs</th><th style="text-align:center">✓</th></tr></thead><tbody>';
+  groups.forEach((g,i)=>{
+    const qc=g.qtd>=10?'#ef4444':g.qtd>=5?'#f59e0b':'#10b981';
+    h+='<tr data-sku="'+esc2(g.sku.toLowerCase())+'" data-prod="'+esc2((g.produto||'').toLowerCase())+'">';
     h+='<td style="color:var(--muted);font-size:.68rem;font-weight:600">'+(i+1)+'</td>';
-    h+='<td style="font-family:monospace;color:var(--accent);font-size:.72rem;font-weight:600">'+it.sku+'</td>';
-    h+='<td style="font-size:.78rem">'+it.title+'</td>';
-    h+='<td style="text-align:center"><span style="font-family:monospace;font-weight:800;font-size:1.1rem;color:'+qtyColor+'">'+it.qty+'</span></td>';
-    h+='<td style="font-family:monospace;color:var(--muted);font-size:.68rem">_______________</td>';
-    h+='<td style="text-align:center;font-size:1.1rem">☐</td>';
+    h+='<td style="font-family:monospace;color:var(--accent);font-size:.72rem;font-weight:600">'+esc2(g.sku)+'</td>';
+    h+='<td class="sep-prod-td" style="font-size:.78rem" title="'+esc2(g.produto)+'">'+esc2((g.produto||g.sku).substring(0,70))+'</td>';
+    h+='<td style="text-align:center"><span style="font-family:monospace;font-weight:800;font-size:1.05rem;color:'+qc+'">'+g.qtd+'</span></td>';
+    if(mixed){
+      h+='<td style="text-align:center">';
+      if(g.ml>0)h+='<span class="so so-ml">ML '+g.ml+'</span>';
+      if(g.sh>0)h+='<span class="so so-sh">SH '+g.sh+'</span>';
+      h+='</td>';
+    }
+    h+='<td><input class="sep-fld" type="text" placeholder="lote..."></td>';
+    h+='<td><input class="sep-fld" type="text" placeholder="obs..."></td>';
+    h+='<td style="text-align:center"><input type="checkbox" class="sep-cb" onchange="sepCheck(this)"></td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
+  h+='<div class="sep-extra"><div class="et">Itens adicionais / saídas após impressão</div><div id="sep-erows">';
+  h+=sepExtraRowHtml();
+  h+='</div><button class="sep-addbtn" onclick="sepAddRow()">+ Adicionar linha</button></div>';
   document.getElementById('sep-body').innerHTML=h;
 }
 
+function esc2(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-async function fetchReadyToPrint(){
-  const btn=document.getElementById('btn-fetch-sep');
-  const printBtn=document.getElementById('btn-print-sep');
-  const status=document.getElementById('sep-status');
-  btn.disabled=true;btn.textContent='⏳ Buscando...';
-  printBtn.style.display='none';
-  document.getElementById('sep-body').innerHTML='<div class="ld"><div class="sp"></div>Buscando pedidos com etiqueta pronta...</div>';
+function sepFilter(q){
+  q=(q||'').toLowerCase().trim();
+  document.querySelectorAll('#sep-table tbody tr').forEach(tr=>{
+    tr.style.display=!q||tr.dataset.sku.includes(q)||tr.dataset.prod.includes(q)?'':'none';
+  });
+}
 
-  try{
-    // Busca todos os pedidos com ready_to_print
-    let readyOrders=[];
-    let offset=0,total=999;
-    while(offset<total){
-      const data=await mlGet('/orders/search?seller='+userId+'&shipping.substatus=ready_to_print&limit=50&offset='+offset+'&sort=date_desc');
-      if(!data.results?.length)break;
-      readyOrders=readyOrders.concat(data.results);
-      total=data.paging?.total||0;
-      offset+=50;
-      status.textContent='Carregando... '+readyOrders.length+' de '+total;
-      if(data.results.length<50)break;
-    }
-
-    status.textContent=readyOrders.length+' pedidos prontos encontrados';
-    btn.disabled=false;btn.textContent='🔍 Atualizar';
-
-    if(!readyOrders.length){
-      document.getElementById('sep-body').innerHTML='<div class="emp" style="padding:3rem"><div class="ei">✅</div><p style="font-weight:600">Nenhum pedido pronto para separação</p><p style="font-size:.78rem;color:var(--muted);margin-top:.3rem">Todos os pedidos já foram processados ou aguardam NF</p></div>';
-      return;
-    }
-
-    renderSep(readyOrders);
-    printBtn.style.display='inline-block';
-  }catch(e){
-    btn.disabled=false;btn.textContent='🔍 Buscar Pedidos Prontos';
-    document.getElementById('sep-body').innerHTML='<div style="margin:1rem;padding:.8rem;background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;color:#ef4444;font-size:.78rem">Erro: '+e.message+'</div>';
+function sepCheck(cb){
+  const tr=cb.closest('tr');
+  tr.classList.toggle('sep-ok',cb.checked);
+  const all=document.querySelectorAll('#sep-table .sep-cb');
+  const done=document.querySelectorAll('#sep-table .sep-cb:checked');
+  const p=document.getElementById('sep-prog');
+  if(p){
+    p.textContent=done.length+'/'+all.length;
+    p.style.color=done.length===all.length?'#10b981':'';
   }
 }
 
-function renderSep(orders){
-  const sm={};
-  orders.forEach(o=>(o.order_items||[]).forEach(item=>{const sku=item.item?.seller_sku||item.item?.id||'SEM-SKU';const title=item.item?.title||'Produto';const qty=item.quantity||1;if(!sm[sku])sm[sku]={sku,title,qty:0};sm[sku].qty+=qty;}));
-  const items=Object.values(sm).sort((a,b)=>b.qty-a.qty);
-  const dl=dv?new Date(dv+'T12:00:00').toLocaleDateString('pt-BR'):'Todos';
-  document.getElementById('ph').textContent='Lista de Separação — HT Hospitalar — '+dl;
-  if(!items.length){document.getElementById('sep-body').innerHTML='<div class="emp"><div class="ei">✅</div>Nenhum pedido para separar.</div>';return;}
-  let h='<div class="tc"><div class="tc-h"><h3>'+dl+' &nbsp;<span style="color:var(--accent);font-weight:400">'+orders.length+' pedidos · '+items.length+' SKUs</span></h3><div class="acts"><button class="btn-s ac" onclick="window.print()">🖨️ Imprimir</button></div></div><table><thead><tr><th>#</th><th>SKU</th><th>Produto</th><th>Qtd</th><th>Lote</th><th>✓</th></tr></thead><tbody>';
-  items.forEach((it,i)=>{h+='<tr><td style="font-family:\'DM Mono\',monospace;color:var(--muted);font-size:.66rem">'+(i+1)+'</td><td style="font-family:\'DM Mono\',monospace;color:var(--accent);font-size:.68rem">'+it.sku+'</td><td>'+it.title+'</td><td style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:.95rem;color:var(--accent2)">'+it.qty+'</td><td style="font-family:\'DM Mono\',monospace;color:var(--muted);font-size:.68rem">___________</td><td>☐</td></tr>';});
-  h+='</tbody></table></div>';document.getElementById('sep-body').innerHTML=h;
+function sepExtraRowHtml(){
+  return '<div class="sep-erow"><input type="text" placeholder="SKU" class="wsm"><input type="text" placeholder="Produto / descrição"><input type="text" placeholder="Qtd" class="wsm"><input type="text" placeholder="Lote" class="wsm"><button class="sep-delbtn" onclick="this.closest(\'.sep-erow\').remove()">×</button></div>';
+}
+function sepAddRow(){
+  const d=document.createElement('div');
+  d.innerHTML=sepExtraRowHtml();
+  document.getElementById('sep-erows').appendChild(d.firstChild);
 }
 
 function buildInsights(){
