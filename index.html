@@ -1161,7 +1161,7 @@ async function loadItems(){
     for(let i=0;i<allIds.length;i+=20){
       const batch=allIds.slice(i,i+20);
       // attributes explicitos garantem available_quantity, inventory_id e variations na resposta
-      const res=await mlGet('/items?ids='+batch.join(',')+'&attributes=id,title,price,permalink,available_quantity,seller_custom_field,attributes,shipping,inventory_id,variations,status');
+      const res=await mlGet('/items?ids='+batch.join(',')+'&attributes=id,title,price,permalink,available_quantity,seller_custom_field,attributes,shipping,inventory_id,variations,status,user_product_id');
       allItems=allItems.concat((res||[]).map(r=>r.body).filter(Boolean));
       body.innerHTML='<div class="ld"><div class="sp"></div>Carregando produtos... '+allItems.length+' de '+allIds.length+'</div>';
     }
@@ -1179,6 +1179,27 @@ async function loadItems(){
       }));
       done+=batch.length;
       body.innerHTML='<div class="ld"><div class="sp"></div>Consultando estoque Full... '+done+' de '+fullIts.length+'</div>';
+    }
+    // Estoque Unificado (User Products): contas migradas reportam available_quantity 0
+    // no anuncio — o estoque real fica em /user-products/{id}/stock por localizacao
+    const needUp=allItems.filter(it=>it.user_product_id&&!it.inventory_id
+      &&!(it.available_quantity>0)&&!(it.variations||[]).some(v=>v.available_quantity>0));
+    let doneUp=0;
+    for(let i=0;i<needUp.length;i+=10){
+      const batch=needUp.slice(i,i+10);
+      await Promise.all(batch.map(async it=>{
+        try{
+          const st=await mlGet('/user-products/'+it.user_product_id+'/stock');
+          let loc=0,full=0;
+          (st?.locations||[]).forEach(l=>{
+            if(l.type==='meli_facility')full+=l.quantity||0;
+            else loc+=l.quantity||0;
+          });
+          it._upLocal=loc;it._upFull=full;
+        }catch(e){}
+      }));
+      doneUp+=batch.length;
+      body.innerHTML='<div class="ld"><div class="sp"></div>Consultando estoque unificado... '+doneUp+' de '+needUp.length+'</div>';
     }
     const t=document.getElementById('alert-toggle');
     if(t){alertsEnabled?t.classList.add('on'):t.classList.remove('on');}
@@ -1200,10 +1221,12 @@ function renderItems(){
       const vs=it.variations.reduce((s,v)=>s+(v.available_quantity||0),0);
       if(vs>0)lq=vs;
     }
+    // Estoque Unificado (User Products) — contas migradas
+    if(!lq&&it._upLocal!==undefined)lq=it._upLocal;
     // Full: estoque real do fulfillment; Local: available_quantity do anúncio
     const localQty=isFull?null:(lq??0);
-    const fullQty=isFull?(it._fullStock??it.available_quantity??0):null;
-    const effQty=isFull?fullQty:localQty;
+    const fullQty=isFull?(it._fullStock??it.available_quantity??0):(it._upFull>0?it._upFull:null);
+    const effQty=isFull?fullQty:(localQty+(fullQty||0));
     const alertClass=showAlerts?getAlertClass(effQty):'ok';
     if(alertClass==='red')redCount++;
     else if(alertClass==='yellow')yellowCount++;
