@@ -515,6 +515,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
                 <option value="yellow">Atenção (≤10)</option>
               </select>
               <button class="btn-s" onclick="loadItems()">↻ Atualizar</button>
+              <button class="btn-s" onclick="diagItem()" title="Diagnóstico de anúncio">🔧</button>
             </div>
           </div>
           <div id="it-body"><div class="ld"><div class="sp"></div>Carregando...</div></div>
@@ -1137,6 +1138,48 @@ function getItemSku(it){
   const a=(it.attributes||[]).find(x=>x.id==='SELLER_SKU');
   if(a&&(a.value_name||a.values?.[0]?.name))return a.value_name||a.values[0].name;
   return it.seller_sku||'—';
+}
+
+// Diagnóstico de anúncio — mostra dados crus da API para depuração de estoque
+async function diagItem(){
+  const id=(prompt('Número do anúncio (MLB...):','MLB3559825266')||'').trim();
+  if(!id)return;
+  const body=document.getElementById('it-body');
+  body.innerHTML='<div class="ld"><div class="sp"></div>Consultando '+id+'...</div>';
+  const out={};
+  try{
+    const it=await mlGet('/items/'+id);
+    out.item={id:it.id,status:it.status,available_quantity:it.available_quantity,
+      sold_quantity:it.sold_quantity,inventory_id:it.inventory_id,
+      user_product_id:it.user_product_id,logistic_type:it.shipping?.logistic_type,
+      seller_custom_field:it.seller_custom_field,
+      sku_attr:(it.attributes||[]).find(a=>a.id==='SELLER_SKU')?.value_name,
+      variations:(it.variations||[]).map(v=>({id:v.id,available_quantity:v.available_quantity,
+        user_product_id:v.user_product_id,inventory_id:v.inventory_id,
+        seller_custom_field:v.seller_custom_field}))};
+    if(it.user_product_id){
+      try{out.user_product_stock=await mlGet('/user-products/'+it.user_product_id+'/stock');}
+      catch(e){out.user_product_stock_erro=e.message;}
+    }
+    for(const v of (it.variations||[])){
+      if(v.user_product_id){
+        try{out['var_'+v.id+'_stock']=await mlGet('/user-products/'+v.user_product_id+'/stock');}
+        catch(e){out['var_'+v.id+'_erro']=e.message;}
+      }
+    }
+    if(it.inventory_id){
+      try{out.inventory_stock=await mlGet('/inventories/'+it.inventory_id+'/stock/fulfillment');}
+      catch(e){out.inventory_stock_erro=e.message;}
+    }
+    try{
+      const mg=await mlGet('/items?ids='+id+'&attributes=id,available_quantity,inventory_id,user_product_id,variations,shipping,status');
+      out.multiget=(Array.isArray(mg)?mg[0]?.body:mg)||mg;
+    }catch(e){out.multiget_erro=e.message;}
+  }catch(e){out.erro=e.message;}
+  body.innerHTML='<div style="padding:1rem"><div style="margin-bottom:.5rem;font-size:.75rem;color:var(--muted)">Diagnóstico de <strong>'+id+'</strong> — copie o texto abaixo e envie para análise:</div>'+
+    '<textarea readonly onclick="this.select()" style="width:100%;height:50vh;font:11px monospace;border:1px solid var(--border);border-radius:8px;padding:.7rem;background:var(--surface2);color:var(--text)">'+
+    JSON.stringify(out,null,2).replace(/</g,'&lt;')+'</textarea>'+
+    '<button class="btn-s" style="margin-top:.5rem" onclick="renderItems()">← Voltar à lista</button></div>';
 }
 
 function isFullItem(it){
