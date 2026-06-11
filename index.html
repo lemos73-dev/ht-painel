@@ -1160,7 +1160,8 @@ async function loadItems(){
     allItems=[];
     for(let i=0;i<allIds.length;i+=20){
       const batch=allIds.slice(i,i+20);
-      const res=await mlGet('/items?ids='+batch.join(','));
+      // attributes explicitos garantem available_quantity, inventory_id e variations na resposta
+      const res=await mlGet('/items?ids='+batch.join(',')+'&attributes=id,title,price,permalink,available_quantity,seller_custom_field,attributes,shipping,inventory_id,variations,status');
       allItems=allItems.concat((res||[]).map(r=>r.body).filter(Boolean));
       body.innerHTML='<div class="ld"><div class="sp"></div>Carregando produtos... '+allItems.length+' de '+allIds.length+'</div>';
     }
@@ -1193,8 +1194,14 @@ function renderItems(){
   const processed=allItems.map(it=>{
     const sku=getItemSku(it);
     const isFull=isFullItem(it);
+    // Anúncios com variações guardam o estoque dentro de variations
+    let lq=it.available_quantity;
+    if(!lq&&Array.isArray(it.variations)&&it.variations.length){
+      const vs=it.variations.reduce((s,v)=>s+(v.available_quantity||0),0);
+      if(vs>0)lq=vs;
+    }
     // Full: estoque real do fulfillment; Local: available_quantity do anúncio
-    const localQty=isFull?null:(it.available_quantity??0);
+    const localQty=isFull?null:(lq??0);
     const fullQty=isFull?(it._fullStock??it.available_quantity??0):null;
     const effQty=isFull?fullQty:localQty;
     const alertClass=showAlerts?getAlertClass(effQty):'ok';
@@ -1409,7 +1416,7 @@ async function analyzePromoItems(promoId,containerId){
     let details=[];
     for(let i=0;i<ids.length;i+=50){
       const batch=ids.slice(i,i+50);
-      const d=await mlGet('/items?ids='+batch.join(',')+'&attributes=id,seller_sku,title,price,sale_price');
+      const d=await mlGet('/items?ids='+batch.join(',')+'&attributes=id,seller_custom_field,attributes,title,price,sale_price');
       if(Array.isArray(d))details=details.concat(d);
       else if(d&&d.id)details.push({code:200,body:d});
     }
@@ -1420,7 +1427,7 @@ async function analyzePromoItems(promoId,containerId){
     const rows=items.map(item=>{
       const iid=item.item_id||item.id;
       const det=detMap[iid]||{};
-      const sku=det.seller_sku||'';
+      const sku=getItemSku(det);
       const promoPrice=item.new_price||det.sale_price?.amount||det.price||0;
       const origPrice=item.original_price||det.price||0;
       const disc=item.discount_percentage||(origPrice&&promoPrice&&origPrice>promoPrice?Math.round((1-promoPrice/origPrice)*100):0);
