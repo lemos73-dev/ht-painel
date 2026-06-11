@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Separação — HT Hospitalar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#E5E9EE;color:#0D1117;font-size:14px}
+.topbar{background:#0D1F3C;color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #F4B942}
+.topbar h1{font-size:16px;font-weight:700}
+.topbar .sub{font-size:11px;opacity:.65;margin-top:2px}
+.wrap{max-width:900px;margin:20px auto;padding:0 16px}
+
+/* Buttons */
+.btn{display:inline-block;padding:9px 20px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:700}
+.btn-blue{background:#0D1F3C;color:#F4B942}
+.btn-blue:hover{background:#1A3460}
+.btn-sm{font-size:12px;padding:6px 14px}
+.btn-gray{background:#C5CDD8;color:#0D1F3C}
+.btn-gray:hover{background:#B0BBC8}
+.btn-green{background:#1A6B3C;color:#fff}
+.btn-green:hover{background:#145530}
+
+/* Upload */
+.zones{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px}
+.zone{border:2px dashed #8A9BB0;border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:#F2F5F8;transition:all .2s}
+.zone:hover,.zone.drag{border-color:#0D1F3C;background:#DDE5EE}
+.zone.ok{border-style:solid;border-color:#1A6B3C;background:#E5F2EB}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:6px}
+.b-ml{background:#F4B942;color:#0D1F3C}
+.b-bling{background:#0D1F3C;color:#F4B942}
+.zone .fn{font-size:12px;color:#1A6B3C;font-weight:700;margin-top:5px;min-height:15px}
+#status-msg{text-align:center;padding:6px;font-size:12px;color:#556677;min-height:18px;font-weight:600}
+
+/* Summary */
+.summary{background:#0D1F3C;border-radius:8px;padding:11px 20px;margin-bottom:14px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.sv{font-size:22px;font-weight:700;color:#F4B942}
+.sl{font-size:10px;color:#7A9BBB;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.sdiv{width:1px;background:#1E3560;align-self:stretch}
+.sdate{margin-left:auto;font-size:11px;color:#7A9BBB;font-style:italic}
+
+/* Toolbar */
+.lt-tools{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.srch{padding:7px 12px;border:1px solid #C5CDD8;border-radius:6px;font-size:12px;outline:none;width:220px;font-family:Arial,sans-serif}
+.srch:focus{border-color:#0D1F3C}
+.prog{font-size:12px;font-weight:700;font-family:monospace;color:#1A6B3C;background:#E5F2EB;border:1px solid #A8D5BC;padding:4px 12px;border-radius:14px}
+
+/* Table */
+.tbl-wrap{background:#fff;border-radius:10px;border:1px solid #C5CDD8;overflow:hidden;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:#0D1F3C}
+thead th{padding:10px 12px;font-size:11px;font-weight:700;color:#F4B942;text-align:left;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+th.tc,td.tc{text-align:center}
+tbody tr{border-bottom:1px solid #EDF0F3}
+tbody tr:last-child{border-bottom:none}
+tbody tr:nth-child(even){background:#FAFBFC}
+tbody tr:hover{background:#F2F6FA}
+td{padding:9px 12px;font-size:13px;vertical-align:middle}
+td.num{color:#8A9BB0;font-size:12px;text-align:center;width:38px}
+td.sku{font-weight:700;color:#0D1F3C;white-space:nowrap;font-family:monospace}
+td.prod{color:#334455;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qpill{display:inline-block;padding:3px 12px;border-radius:12px;font-weight:700;font-size:14px;min-width:36px;text-align:center}
+td input.field{width:100%;border:none;border-bottom:2px solid #DDE3EA;padding:3px 4px;font-size:12px;background:transparent;outline:none;font-family:Arial,sans-serif}
+td input.field:focus{border-color:#0D1F3C}
+.cb{width:17px;height:17px;cursor:pointer;accent-color:#1A6B3C}
+tr.done td{opacity:.4}
+tr.done td.prod{text-decoration:line-through}
+.so{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;margin-left:4px}
+.so-ml{background:#FDF2D0;color:#92400e}
+.so-sh{background:#FEE2E2;color:#b91c1c}
+
+/* Extra items */
+.extra{background:#fff;border-radius:10px;border:2px dashed #F4B942;padding:14px 18px;margin-bottom:14px}
+.extra-title{font-size:11px;font-weight:700;color:#0D1F3C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.erow{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.erow input{flex:1;padding:6px 10px;border:1px solid #C5CDD8;border-radius:6px;font-size:12px;outline:none;font-family:Arial,sans-serif}
+.erow input:focus{border-color:#0D1F3C}
+.erow .wsm{flex:0 0 80px}
+.erow .wmd{flex:0 0 120px}
+.addbtn{width:100%;padding:6px;border:1.5px dashed #8A9BB0;background:none;border-radius:6px;cursor:pointer;font-size:12px;color:#778899;margin-top:2px;font-family:Arial,sans-serif}
+.addbtn:hover{border-color:#0D1F3C;color:#0D1F3C}
+.delbtn{background:none;border:none;cursor:pointer;color:#C0392B;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0}
+
+@media(max-width:640px){
+  .zones{grid-template-columns:1fr}
+  .srch{width:140px}
+}
+
+/* Print */
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff;font-size:12px}
+  .wrap{max-width:100%;padding:0;margin:0}
+  .topbar{background:#0D1F3C!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:8px 16px}
+  .summary{background:#0D1F3C!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:8px 16px;margin-bottom:10px;border-radius:0}
+  .tbl-wrap{box-shadow:none;border:1px solid #aaa;border-radius:0}
+  thead tr{background:#0D1F3C!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  tbody tr:nth-child(even){background:#F8F8F8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .qpill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  td input.field{border:none;border-bottom:1px solid #aaa;background:transparent}
+  .extra{border:1px solid #aaa;border-radius:0;page-break-inside:avoid}
+  .erow input{border:none;border-bottom:1px solid #aaa;background:transparent;padding:2px 4px}
+  tr{page-break-inside:avoid}
+  tr.done td{opacity:1;text-decoration:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>HT Hospitalar — Lista de Separação</h1>
+    <div class="sub" id="topbar-date"></div>
+  </div>
+  <div class="no-print" style="display:flex;gap:8px">
+    <button class="btn btn-sm btn-gray" id="btn-reset" style="display:none" onclick="resetApp()">← Novo upload</button>
+    <button class="btn btn-sm btn-green" id="btn-print" style="display:none" onclick="window.print()">🖨️ Imprimir</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- UPLOAD -->
+  <div id="sec-upload" style="margin-top:4px">
+    <div class="zones">
+      <div>
+        <div class="zone" id="zone-ml"
+          onclick="document.getElementById('f-ml').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');selFile({files:event.dataTransfer.files},'ml')">
+          <div class="badge b-ml">MERCADO LIVRE</div>
+          <div style="font-weight:700;font-size:13px;color:#0D1F3C;margin-bottom:3px">Lista de Identificação ML</div>
+          <div style="font-size:12px;color:#778899">Clique ou arraste o PDF aqui</div>
+          <div class="fn" id="fn-ml"></div>
+        </div>
+        <input type="file" id="f-ml" accept=".pdf" style="display:none" onchange="selFile(this,'ml')">
+      </div>
+      <div>
+        <div class="zone" id="zone-bling"
+          onclick="document.getElementById('f-bling').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');selFile({files:event.dataTransfer.files},'bling')">
+          <div class="badge b-bling">BLING / SHOPEE</div>
+          <div style="font-weight:700;font-size:13px;color:#0D1F3C;margin-bottom:3px">Relatório de Vendas Bling</div>
+          <div style="font-size:12px;color:#778899">Clique ou arraste o PDF aqui</div>
+          <div class="fn" id="fn-bling"></div>
+        </div>
+        <input type="file" id="f-bling" accept=".pdf" style="display:none" onchange="selFile(this,'bling')">
+      </div>
+    </div>
+    <div id="status-msg">Selecione ao menos um PDF para gerar a lista.</div>
+    <div style="text-align:center;margin-top:12px">
+      <button id="btn-gen" class="btn btn-blue" style="font-size:15px;padding:11px 28px;opacity:.4;cursor:not-allowed" onclick="tryGenerate()">
+        &#9654; Gerar Lista de Separação
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="sec-result" style="display:none">
+
+    <div class="summary">
+      <div><div class="sv" id="m-skus">0</div><div class="sl">SKUs</div></div>
+      <div class="sdiv"></div>
+      <div><div class="sv" id="m-itens">0</div><div class="sl">Total itens</div></div>
+      <div class="sdiv"></div>
+      <div><div class="sv" id="m-ped">0</div><div class="sl">Pedidos</div></div>
+      <div class="sdate" id="sum-date"></div>
+    </div>
+
+    <div class="lt-tools no-print">
+      <input class="srch" type="text" placeholder="🔎 Filtrar por SKU ou produto..." oninput="filterRows(this.value)">
+      <span class="prog" id="prog">0/0 separados</span>
+    </div>
+
+    <div class="tbl-wrap">
+      <table id="main-table">
+        <thead>
+          <tr>
+            <th class="tc">#</th>
+            <th>SKU</th>
+            <th>Produto</th>
+            <th class="tc">Qtd</th>
+            <th class="tc" id="th-orig" style="display:none">Origem</th>
+            <th style="width:120px">Lote</th>
+            <th style="width:100px">Obs</th>
+            <th class="tc">✓</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="extra">
+      <div class="extra-title">Itens adicionais / saídas após impressão</div>
+      <div id="erows"></div>
+      <button class="addbtn no-print" onclick="addRow()">+ Adicionar linha</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='';
+
+var files={ml:null,bling:null};
+var ready=false;
+var d=new Date();
+var dateStr=d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+document.getElementById('topbar-date').textContent=dateStr;
+
+function selFile(inp,s){
+  var f=inp.files&&inp.files[0]; if(!f)return;
+  files[s]=f;
+  document.getElementById('zone-'+s).classList.add('ok');
+  document.getElementById('fn-'+s).textContent='✔ '+f.name;
+  ready=true;
+  var btn=document.getElementById('btn-gen');
+  btn.style.opacity='1'; btn.style.cursor='pointer';
+  var msg=(files.bling&&files.ml)?'Ambos carregados! Clique em Gerar.':
+    files.bling?'Bling carregado. Adicione ML ou clique em Gerar.':
+    'ML carregado. Adicione Bling ou clique em Gerar.';
+  document.getElementById('status-msg').textContent=msg;
+}
+
+function tryGenerate(){ if(ready) generate(); }
+
+async function extractText(file){
+  var ab=await file.arrayBuffer();
+  var pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  var out=[];
+  for(var i=1;i<=pdf.numPages;i++){
+    var pg=await pdf.getPage(i);
+    var tc=await pg.getTextContent();
+    var lm={};
+    tc.items.forEach(function(it){
+      var y=Math.round(it.transform[5]);
+      (lm[y]||(lm[y]=[])).push(it);
+    });
+    Object.keys(lm).map(Number).sort(function(a,b){return b-a;}).forEach(function(y){
+      var txt=lm[y].sort(function(a,b){return a.transform[4]-b.transform[4];}).map(function(x){return x.str;}).join(' ').trim();
+      if(txt)out.push(txt);
+    });
+  }
+  return out;
+}
+
+// Parser PDF "Lista de Identificação" do Mercado Livre
+function parseML(lines){
+  var items=[];
+  for(var i=0;i<lines.length;i++){
+    var sm=lines[i].match(/SKU:\s*([A-Za-z0-9_-]{3,30})/);
+    if(!sm)continue;
+    var sku=sm[1].toUpperCase();
+    // Quantidade: na própria linha ou nas 4 seguintes (para na próxima entrada)
+    var qtd=1;
+    for(var qi=i;qi<Math.min(i+5,lines.length);qi++){
+      var qm=lines[qi].match(/Quantidade:\s*(\d+)/);
+      if(qm){qtd=parseInt(qm[1]);break;}
+      if(qi>i&&/SKU:/.test(lines[qi]))break;
+    }
+    // Produto: primeira linha válida acima do SKU
+    var produto='';
+    for(var pi=i-1;pi>=Math.max(0,i-8);pi--){
+      var pl=(lines[pi]||'').trim();
+      if(!pl)continue;
+      if(/SKU:/.test(pl))break;
+      if(/^(Identif|Despachem)/i.test(pl))break;
+      if(/Quantidade:\s*\d+/.test(pl))break;
+      if(/^(Pack ID:|Venda:)/i.test(pl))continue;
+      if(/^\d{8,}$/.test(pl))continue;
+      if(/^[A-Z0-9]{10,}$/.test(pl))continue;
+      var idm=pl.match(/^(?:\d{8,}|[A-Z0-9]{10,})\s+(.+)$/);
+      produto=(idm?idm[1]:pl).trim();
+      break;
+    }
+    produto=produto.replace(/\s*(Tamanho|Quantidade|Cor|Tipo de embalagem|Voltagem):.*$/i,'').trim();
+    items.push({sku:sku,produto:produto||sku,qtd:qtd,origem:'ML'});
+  }
+  return items;
+}
+
+// Parser PDF "Relatório de Vendas" do Bling (pedidos Shopee)
+function parseBling(lines){
+  var SKIP=/^(Ht |CNPJ|Rua |S.o Paulo - SP|Relat|M.s:|Situa|Cliente\b|Produto\b|C.digo\b|Qtde\b|Pre.o|Valor\b|Frete\b|Desconto\b|Outras\b|Totais?\b|faturada|M.dio|faturado|desp)/i;
+  var items=[],hits=[];
+  for(var i=0;i<lines.length;i++){
+    if(/^Totais/i.test(lines[i]))continue;
+    var m=lines[i].match(/\b([A-Z][A-Za-z0-9]{4,25})\s+(\d+),\d{2}\s+\d+,\d{2}/);
+    if(m)hits.push({idx:i,sku:m[1].toUpperCase(),qtd:parseInt(m[2]),ms:lines[i].indexOf(m[0])});
+  }
+  hits.forEach(function(h,si){
+    var prevEnd=si>0?hits[si-1].idx:-1;
+    var block=lines.slice(prevEnd+1,h.idx);
+    // Última linha de cidade (Cidade/UF) antes do SKU — o que vem depois é produto
+    var cityIdx=-1;
+    for(var bi=block.length-1;bi>=0;bi--){
+      if(/\/[A-Z]{2}\b/.test(block[bi])){cityIdx=bi;break;}
+    }
+    var pp=[];
+    for(var pi=cityIdx+1;pi<block.length;pi++){
+      var bl=(block[pi]||'').trim();
+      if(!bl||SKIP.test(bl))continue;
+      if(/\d+,\d{2}\s+\d+,\d{2}/.test(bl))continue;
+      if(/\b\d{8,11}\b/.test(bl))continue;
+      if(/^Quantidade:/i.test(bl))continue;
+      pp.push(bl);
+    }
+    var before=lines[h.idx].substring(0,h.ms).trim();
+    if(before&&!SKIP.test(before))pp.push(before);
+    // Continuação do nome APÓS a linha do SKU (até 3 linhas)
+    for(var ai=h.idx+1;ai<Math.min(h.idx+4,lines.length);ai++){
+      var al=(lines[ai]||'').trim();
+      if(!al||SKIP.test(al))break;
+      if(/\d+,\d{2}\s+\d+,\d{2}/.test(al))break;
+      if(/\b\d{8,11}\b/.test(al))break;
+      if(/\/[A-Z]{2}\b/.test(al))break;
+      if(/-\s*$/.test(al))break;
+      if(/^(Quantidade|Kits?\s*Kits?|Tamanho|Cor)\s*:/i.test(al))break;
+      if(!/\d/.test(al)&&al.split(/\s+/).length>1)break;
+      pp.push(al);
+    }
+    var produto=pp.join(' ').replace(/\s*(Tamanho|Quantidade|Cor|Tipo de embalagem|Voltagem|Kits)\s*:.*$/i,'').trim();
+    items.push({sku:h.sku,produto:produto||h.sku,qtd:h.qtd,origem:'Shopee'});
+  });
+  return items;
+}
+
+function consolidate(items){
+  var map={};
+  items.forEach(function(it){
+    var k=it.sku;
+    if(!map[k])map[k]={sku:k,produto:'',qtd:0,pedidos:0,ml:0,sh:0};
+    map[k].qtd+=it.qtd;
+    map[k].pedidos++;
+    if(it.origem==='Shopee')map[k].sh+=it.qtd;else map[k].ml+=it.qtd;
+    if((it.produto||'').length>(map[k].produto||'').length&&it.produto!==k)map[k].produto=it.produto;
+  });
+  return Object.values(map).sort(function(a,b){return b.qtd-a.qtd;});
+}
+
+function qColor(q){
+  if(q>=10)return{bg:'#C0392B',c:'#fff'};
+  if(q>=5)return{bg:'#E8920C',c:'#fff'};
+  return{bg:'#1A6B3C',c:'#fff'};
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function renderTable(groups,mixed){
+  var tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  document.getElementById('th-orig').style.display=mixed?'':'none';
+  groups.forEach(function(g,i){
+    var qc=qColor(g.qtd);
+    var tr=document.createElement('tr');
+    tr.dataset.sku=g.sku.toLowerCase();
+    tr.dataset.prod=(g.produto||'').toLowerCase();
+    var origTd='';
+    if(mixed){
+      origTd='<td class="tc">';
+      if(g.ml>0)origTd+='<span class="so so-ml">ML '+g.ml+'</span>';
+      if(g.sh>0)origTd+='<span class="so so-sh">SH '+g.sh+'</span>';
+      origTd+='</td>';
+    }
+    tr.innerHTML=
+      '<td class="num">'+(i+1)+'</td>'+
+      '<td class="sku">'+esc(g.sku)+'</td>'+
+      '<td class="prod" title="'+esc(g.produto)+'">'+esc((g.produto||g.sku).substring(0,70))+'</td>'+
+      '<td class="tc"><span class="qpill" style="background:'+qc.bg+';color:'+qc.c+'">'+g.qtd+'</span></td>'+
+      origTd+
+      '<td><input class="field" type="text" placeholder="lote..."></td>'+
+      '<td><input class="field" type="text" placeholder="obs..."></td>'+
+      '<td class="tc"><input type="checkbox" class="cb" onchange="checkRow(this)"></td>';
+    tbody.appendChild(tr);
+  });
+  updateProg();
+}
+
+function filterRows(q){
+  q=(q||'').toLowerCase().trim();
+  document.querySelectorAll('#tbody tr').forEach(function(tr){
+    tr.style.display=!q||tr.dataset.sku.indexOf(q)>=0||tr.dataset.prod.indexOf(q)>=0?'':'none';
+  });
+}
+
+function checkRow(cb){
+  cb.closest('tr').classList.toggle('done',cb.checked);
+  updateProg();
+}
+
+function updateProg(){
+  var all=document.querySelectorAll('#tbody .cb');
+  var done=document.querySelectorAll('#tbody .cb:checked');
+  var p=document.getElementById('prog');
+  p.textContent=done.length+'/'+all.length+' separados';
+  p.style.background=done.length===all.length&&all.length>0?'#1A6B3C':'#E5F2EB';
+  p.style.color=done.length===all.length&&all.length>0?'#fff':'#1A6B3C';
+}
+
+function extraRowHtml(){
+  return '<input type="text" placeholder="SKU" class="wsm"><input type="text" placeholder="Produto / descrição"><input type="text" placeholder="Qtd" class="wsm"><input type="text" placeholder="Lote" class="wmd"><button class="delbtn no-print" onclick="this.closest(\'.erow\').remove()">&#215;</button>';
+}
+function addRow(){
+  var div=document.createElement('div');
+  div.className='erow';
+  div.innerHTML=extraRowHtml();
+  document.getElementById('erows').appendChild(div);
+}
+
+async function generate(){
+  var btn=document.getElementById('btn-gen');
+  btn.style.opacity='.5'; btn.style.cursor='not-allowed';
+  btn.textContent='Processando...';
+  document.getElementById('status-msg').textContent='Lendo PDFs...';
+  try{
+    var all=[];
+    if(files.ml){
+      document.getElementById('status-msg').textContent='Lendo PDF Mercado Livre...';
+      all=all.concat(parseML(await extractText(files.ml)));
+    }
+    if(files.bling){
+      document.getElementById('status-msg').textContent='Lendo PDF Bling/Shopee...';
+      all=all.concat(parseBling(await extractText(files.bling)));
+    }
+    if(!all.length){
+      document.getElementById('status-msg').textContent='Nenhum item encontrado. Verifique os PDFs.';
+      btn.style.opacity='1'; btn.style.cursor='pointer'; btn.textContent='▶ Gerar Lista de Separação';
+      return;
+    }
+    var groups=consolidate(all);
+    var totalItens=groups.reduce(function(s,g){return s+g.qtd;},0);
+    var totalPed=all.length;
+    var mixed=groups.some(function(g){return g.ml>0;})&&groups.some(function(g){return g.sh>0;});
+    document.getElementById('m-skus').textContent=groups.length;
+    document.getElementById('m-itens').textContent=totalItens;
+    document.getElementById('m-ped').textContent=totalPed;
+    document.getElementById('sum-date').textContent=dateStr;
+    renderTable(groups,mixed);
+    document.getElementById('erows').innerHTML='';
+    addRow();
+    document.getElementById('sec-upload').style.display='none';
+    document.getElementById('sec-result').style.display='block';
+    document.getElementById('btn-reset').style.display='inline-block';
+    document.getElementById('btn-print').style.display='inline-block';
+  }catch(e){
+    document.getElementById('status-msg').textContent='Erro: '+e.message;
+    btn.style.opacity='1'; btn.style.cursor='pointer'; btn.textContent='▶ Gerar Lista de Separação';
+    console.error(e);
+  }
+}
+
+function resetApp(){
+  files={ml:null,bling:null}; ready=false;
+  ['ml','bling'].forEach(function(s){
+    document.getElementById('zone-'+s).className='zone';
+    document.getElementById('fn-'+s).textContent='';
+    document.getElementById('f-'+s).value='';
+  });
+  document.getElementById('status-msg').textContent='Selecione ao menos um PDF para gerar a lista.';
+  var btn=document.getElementById('btn-gen');
+  btn.style.opacity='.4'; btn.style.cursor='not-allowed'; btn.textContent='▶ Gerar Lista de Separação';
+  document.getElementById('sec-upload').style.display='block';
+  document.getElementById('sec-result').style.display='none';
+  document.getElementById('btn-reset').style.display='none';
+  document.getElementById('btn-print').style.display='none';
+}
+</script>
+</body>
+</html>
