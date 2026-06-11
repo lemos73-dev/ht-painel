@@ -1222,13 +1222,14 @@ function renderItems(){
   const ord={'red':0,'yellow':1,'ok':2};
   filtered.sort((a,b)=>(ord[a.alertClass]-ord[b.alertClass])||((a.effQty??999)-(b.effQty??999)));
   if(!filtered.length){document.getElementById('it-body').innerHTML='<div class="emp"><div class="ei">✅</div>Nenhum produto neste filtro</div>';return;}
-  let h='<table><thead><tr><th>Produto</th><th>SKU</th><th>Preço</th><th style="text-align:center">Est. Local</th><th style="text-align:center">Est. Full</th><th>Alerta</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Anúncio</th><th>Produto</th><th>SKU</th><th>Preço</th><th style="text-align:center">Est. Local</th><th style="text-align:center">Est. Full</th><th>Alerta</th></tr></thead><tbody>';
   filtered.forEach(it=>{
     const ac2=showAlerts?it.alertClass:'ok';
     const rowCls=ac2==='red'?' class="row-alert-red"':ac2==='yellow'?' class="row-alert-yellow"':'';
     const sCls=ac2==='red'?' alert-red':ac2==='yellow'?' alert-yellow':'';
     const dot=ac2==='red'?'<span class="alert-badge ab-red"></span>':ac2==='yellow'?'<span class="alert-badge ab-yellow"></span>':'';
     h+='<tr'+rowCls+'>';
+    h+='<td style="font-family:\'DM Mono\',monospace;font-size:.68rem;white-space:nowrap">'+(it.permalink?'<a href="'+it.permalink+'" target="_blank" style="color:var(--accent);text-decoration:none" title="Abrir anúncio no ML">'+it.id+' ↗</a>':it.id)+'</td>';
     h+='<td style="font-size:.74rem">'+(it.title||'').substring(0,55)+'</td>';
     h+='<td style="font-family:\'DM Mono\',monospace;color:var(--accent);font-size:.68rem">'+it.sku+'</td>';
     h+='<td style="font-family:\'DM Mono\',monospace;color:var(--accent2)">'+fmtBRL(it.price||0)+'</td>';
