@@ -477,6 +477,25 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
           <div class="sc green"><div class="lbl">🟢 Total Ativas</div><div class="val" id="ps-total" style="color:var(--accent2)">—</div><div class="sub">promoções</div></div>
           <div class="sc blue"><div class="lbl">📩 Convites</div><div class="val" id="ps-items" style="color:var(--accent)">—</div><div class="sub">para avaliar</div></div>
         </div>
+        <div class="tc" style="margin-bottom:.8rem">
+          <div class="tc-h">
+            <h3>🔍 Oportunidades por Anúncio <span id="oport-count" style="color:var(--muted);font-weight:400;font-size:.72rem"></span></h3>
+            <div class="acts">
+              <select id="oport-filter" onchange="renderOportunidades(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:.35rem .6rem;color:var(--text);font-size:.72rem;outline:none">
+                <option value="candidate">📩 Só convites</option>
+                <option value="started">✔ Participando</option>
+                <option value="all">Todas as ofertas</option>
+              </select>
+              <button class="btn-s ac" onclick="analyzeAllPromos()">🔍 Analisar tudo</button>
+            </div>
+          </div>
+          <div id="promo-oport">
+            <div class="emp" style="padding:1.5rem"><div class="ei">🔍</div>
+              <p style="font-weight:600;margin-bottom:.3rem">Análise completa de oportunidades</p>
+              <p style="font-size:.75rem;color:var(--muted)">Clique em "Analisar tudo" para varrer todas as campanhas,<br>calcular a margem de cada oferta e ver onde vale a pena participar</p>
+            </div>
+          </div>
+        </div>
         <div class="tc">
           <div class="tc-h">
             <h3>🏷️ Promoções Ativas <span id="promo-count" style="color:var(--muted);font-weight:400;font-size:.72rem"></span></h3>
@@ -1612,6 +1631,115 @@ function togglePromoAna(promoId,containerId){
     el.style.display='';
     analyzePromoItems(promoId,containerId);
   }
+}
+
+// ── OPORTUNIDADES POR ANÚNCIO — varre todas as campanhas e calcula MC por oferta ──
+let promoOffers=[];
+
+async function analyzeAllPromos(){
+  const el=document.getElementById('promo-oport');
+  const comissao=parseFloat(document.getElementById('ml-comissao')?.value||'12')||12;
+  el.innerHTML='<div class="ld"><div class="sp"></div>Buscando campanhas...</div>';
+  try{
+    const proms=await fetchPromos('started');
+    try{proms.push(...await fetchPromos('candidate'));}catch(e){}
+    if(!proms.length){
+      el.innerHTML='<div class="emp" style="padding:1.5rem"><div class="ei">🏷️</div>Nenhuma campanha encontrada</div>';
+      return;
+    }
+    // Coleta as ofertas (itens) de cada campanha
+    const offers=[];
+    for(let pi=0;pi<proms.length;pi++){
+      const p=proms[pi];
+      el.innerHTML='<div class="ld"><div class="sp"></div>Campanha '+(pi+1)+' de '+proms.length+' — '+((p.name||p.id)+'').substring(0,40)+'... ('+offers.length+' ofertas)</div>';
+      let offset=0,total=9999,pages=0;
+      while(offset<total&&pages<10){
+        let d;
+        try{d=await mlGet('/seller-promotions/'+p.id+'/items?app_version=v2&limit=50&offset='+offset);}catch(e){break;}
+        if(!d.results?.length)break;
+        d.results.forEach(it=>offers.push({p,it}));
+        total=d.paging?.total||0;offset+=50;pages++;
+        if(d.results.length<50)break;
+      }
+    }
+    if(!offers.length){
+      el.innerHTML='<div class="emp" style="padding:1.5rem"><div class="ei">📭</div>Nenhuma oferta encontrada nas campanhas</div>';
+      return;
+    }
+    // Detalhes dos anúncios (título, SKU, preço atual)
+    const ids=[...new Set(offers.map(o=>o.it.id||o.it.item_id).filter(Boolean))];
+    const detMap={};
+    for(let i=0;i<ids.length;i+=20){
+      el.innerHTML='<div class="ld"><div class="sp"></div>Detalhes dos anúncios... '+Math.min(i+20,ids.length)+' de '+ids.length+'</div>';
+      try{
+        const d=await mlGet('/items?ids='+ids.slice(i,i+20).join(',')+'&attributes=id,seller_custom_field,attributes,title,price,permalink');
+        (Array.isArray(d)?d:[]).forEach(r=>{const b=r.body;if(b&&b.id)detMap[b.id]=b;});
+      }catch(e){}
+    }
+    // Calcula MC por oferta
+    promoOffers=offers.map(o=>{
+      const it=o.it;
+      const iid=it.id||it.item_id;
+      const det=detMap[iid]||{};
+      const sku=getItemSku(det);
+      const orig=it.original_price||det.price||0;
+      let promoPrice=it.price??it.new_price??it.suggested_discounted_price??it.min_discounted_price??0;
+      const meliPct=it.meli_percentage||0;
+      const received=meliPct&&orig>promoPrice?promoPrice+(orig-promoPrice)*meliPct/100:promoPrice;
+      const mc=calcMC(received,sku,comissao);
+      const disc=orig&&promoPrice&&orig>promoPrice?Math.round((1-promoPrice/orig)*100):0;
+      return{iid,sku,title:det.title||iid,permalink:det.permalink||'',
+        pname:o.p.name||o.p.id,ptype:o.p.type,fin:o.p.finish_date,
+        promoPrice,orig,disc,meliPct,received,
+        mcPct:mc?mc.pct:null,mcVal:mc?mc.mc:null,st:(it.status||'').toLowerCase()};
+    }).filter(r=>r.promoPrice>0);
+    renderOportunidades(document.getElementById('oport-filter')?.value||'candidate');
+  }catch(e){
+    el.innerHTML='<div style="margin:1rem;padding:.7rem;background:#fff5f5;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;font-size:.75rem">Erro: '+e.message+'</div>';
+  }
+}
+
+function renderOportunidades(filtro){
+  const el=document.getElementById('promo-oport');
+  if(!promoOffers.length){return;}
+  let rows=promoOffers;
+  if(filtro==='candidate')rows=rows.filter(r=>r.st==='candidate');
+  else if(filtro==='started')rows=rows.filter(r=>r.st==='started');
+  rows=rows.slice().sort((a,b)=>(b.mcPct??-9999)-(a.mcPct??-9999));
+  const withMc=rows.filter(r=>r.mcPct!==null);
+  const nVale=withMc.filter(r=>r.mcPct>=15).length;
+  const nReg=withMc.filter(r=>r.mcPct>=5&&r.mcPct<15).length;
+  const nRuim=withMc.filter(r=>r.mcPct<5).length;
+  document.getElementById('oport-count').textContent='— '+rows.length+' ofertas';
+  if(!rows.length){
+    el.innerHTML='<div class="emp" style="padding:1.5rem"><div class="ei">📭</div>Nenhuma oferta neste filtro</div>';
+    return;
+  }
+  let h='<div style="padding:.6rem .8rem;border-bottom:1px solid var(--border);display:flex;gap:.3rem;flex-wrap:wrap;align-items:center">';
+  h+='<span class="mc-ex">✅ '+nVale+' valem (≥15%)</span><span class="mc-re">⚠️ '+nReg+' regulares</span><span class="mc-ru">❌ '+nRuim+' ruins</span>';
+  h+='<span style="font-size:.62rem;color:var(--muted)">· ordenado por melhor margem · MC calculada sobre o que você recebe (com rebate ML)</span>';
+  h+='</div>';
+  h+='<div style="max-height:60vh;overflow-y:auto"><table><thead><tr><th>Produto</th><th>Campanha</th><th>Preço Promo</th><th style="text-align:center">MC</th><th style="text-align:center">Status</th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    h+='<tr>';
+    h+='<td style="max-width:230px"><div style="font-size:.72rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc2(r.title)+'">'+(r.permalink?'<a href="'+r.permalink+'" target="_blank" style="color:inherit;text-decoration:none">'+esc2(r.title)+'</a>':esc2(r.title))+'</div>';
+    h+='<div style="font-size:.6rem;color:var(--muted);font-family:monospace">'+esc2(r.sku||'—')+'</div></td>';
+    const tc=PROMO_COLOR[r.ptype]||'#64748b';
+    h+='<td><span style="font-size:.62rem;font-weight:600;color:'+tc+'">'+esc2((r.pname+'').substring(0,32))+'</span>';
+    if(r.fin)h+='<div style="font-size:.58rem;color:var(--muted)">até '+new Date(r.fin).toLocaleDateString('pt-BR')+'</div>';
+    h+='</td>';
+    h+='<td style="white-space:nowrap;font-size:.7rem">';
+    if(r.orig&&r.orig>r.promoPrice)h+='<s style="color:var(--muted2);font-size:.62rem">'+fmtBRL(r.orig)+'</s> ';
+    h+='<strong>'+fmtBRL(r.promoPrice)+'</strong>';
+    if(r.disc)h+=' <span style="background:#fef9c3;color:#a16207;font-size:.58rem;padding:.08rem .25rem;border-radius:3px">-'+r.disc+'%</span>';
+    if(r.meliPct)h+='<div style="font-size:.58rem;color:#1d4ed8" title="Você recebe '+fmtBRL(r.received)+'">🎁 ML banca '+r.meliPct+'% → recebe '+fmtBRL(r.received)+'</div>';
+    h+='</td>';
+    h+='<td style="text-align:center">'+mcBadge(r.mcPct)+(r.mcVal!==null?'<div style="font-size:.58rem;color:var(--muted);font-family:monospace">'+fmtBRL(r.mcVal)+'/un</div>':'')+'</td>';
+    h+='<td style="text-align:center">'+(r.st==='started'?'<span class="tag paid">✔ PARTICIPA</span>':r.st==='candidate'?'<span class="tag pending">📩 CONVITE</span>':'<span class="tag">'+esc2(r.st||'—')+'</span>')+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
 }
 
 // ── PROMOÇÕES ─────────────────────────────────────────────────────────────────
