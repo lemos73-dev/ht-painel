@@ -483,6 +483,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
             <div class="acts">
               <select id="oport-filter" onchange="renderOportunidades(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:.35rem .6rem;color:var(--text);font-size:.72rem;outline:none">
                 <option value="candidate">📩 Só convites</option>
+                <option value="rebate">🎁 Redução de tarifa / rebate</option>
                 <option value="started">✔ Participando</option>
                 <option value="all">Todas as ofertas</option>
               </select>
@@ -505,6 +506,11 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
                 Comissão ML:
                 <input id="ml-comissao" type="number" min="1" max="30" step="0.1" value="12"
                   style="width:3.2rem;padding:.15rem .3rem;border:1px solid var(--border);border-radius:4px;font-size:.65rem;text-align:center">%
+              </label>
+              <label style="font-size:.65rem;color:var(--muted);display:flex;align-items:center;gap:.3rem" title="Custo médio do frete grátis para produtos de R$ 79 ou mais. Abaixo de R$ 79 é aplicada a tarifa fixa do ML automaticamente (R$ 6,25 / 6,50 / 6,75 por faixa de preço)">
+                🚚 Frete ≥79:
+                R$ <input id="ml-frete" type="number" min="0" max="200" step="0.5" value="22"
+                  style="width:3.4rem;padding:.15rem .3rem;border:1px solid var(--border);border-radius:4px;font-size:.65rem;text-align:center">
               </label>
               <button class="btn-s" onclick="loadPromocoes()">↻ Atualizar</button>
             </div>
@@ -1510,11 +1516,17 @@ async function selectMetItem(itemId, el){
 }
 
 // ── MARGEM DE CONTRIBUIÇÃO ────────────────────────────────────────────────────
-function calcMC(preco,sku,comissaoPct){
+function getFreteCfg(){return parseFloat(document.getElementById('ml-frete')?.value||'22')||22;}
+
+// MC completa: imposto + comissão ML + tarifa fixa (<R$79) ou frete grátis (≥R$79)
+// rebateVal = valor que o ML devolve (banca parte do desconto / reduz tarifa)
+function calcMC(preco,sku,comissaoPct,rebateVal=0){
   const custo=CUSTOS_BASE[(sku||'').toUpperCase().trim()];
   if(custo===undefined||preco<=0)return null;
-  const mc=preco*(1-IMP_PADRAO/100-comissaoPct/100)-custo;
-  return{mc,pct:mc/preco*100};
+  const taxaFixa=preco<79?(preco<29?6.25:preco<50?6.50:6.75):0;
+  const frete=preco>=79?getFreteCfg():0;
+  const mc=preco*(1-IMP_PADRAO/100-comissaoPct/100)-custo-taxaFixa-frete+rebateVal;
+  return{mc,pct:mc/preco*100,custo,taxaFixa,frete,rebateVal};
 }
 function mcBadge(pct){
   if(pct===null)return'<span class="mc-nd">sem custo</span>';
@@ -1569,10 +1581,11 @@ async function analyzePromoItems(promoId,ptype,containerId){
       const disc=origPrice&&promoPrice&&origPrice>promoPrice?Math.round((1-promoPrice/origPrice)*100):0;
       const meliPct=item.meli_percentage||0;
       // Com rebate, o vendedor recebe o preço promo + a parte do desconto que o ML banca
-      const received=meliPct&&origPrice>promoPrice?promoPrice+(origPrice-promoPrice)*meliPct/100:promoPrice;
-      const mc=calcMC(received,sku,comissao);
+      const rebateVal=meliPct&&origPrice>promoPrice?(origPrice-promoPrice)*meliPct/100:0;
+      const received=promoPrice+rebateVal;
+      const mc=calcMC(promoPrice,sku,comissao,rebateVal);
       return{iid,sku,title:det.title||iid,promoPrice,origPrice,disc,meliPct,received,
-        mcPct:mc?mc.pct:null,mcVal:mc?mc.mc:null,st:item.status||''};
+        mcPct:mc?mc.pct:null,mcVal:mc?mc.mc:null,mcDet:mc,st:item.status||''};
     }).sort((a,b)=>(b.mcPct??-9999)-(a.mcPct??-9999));
 
     // Resumo e recomendação
@@ -1596,7 +1609,7 @@ async function analyzePromoItems(promoId,ptype,containerId){
     h+='</div>';
     h+='<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.45rem">';
     h+='<span class="mc-ex">'+nEx+' excelente ≥25%</span><span class="mc-bo">'+nBo+' boa 15-25%</span><span class="mc-re">'+nRe+' regular 5-15%</span><span class="mc-ru">'+nRu+' ruim &lt;5%</span>';
-    h+='<span style="font-size:.6rem;color:#94a3b8;align-self:center">· comissão ML '+comissao+'% + imposto '+IMP_PADRAO+'%</span>';
+    h+='<span style="font-size:.6rem;color:#94a3b8;align-self:center">· comissão '+comissao+'% + imposto '+IMP_PADRAO+'% + tarifa fixa (&lt;R$79) ou frete '+fmtBRL(getFreteCfg())+' (≥R$79)</span>';
     h+='</div>';
     h+='<div style="display:flex;flex-direction:column;gap:.22rem">';
     rows.forEach(r=>{
@@ -1693,13 +1706,15 @@ async function analyzeAllPromos(){
       const orig=it.original_price||det.price||0;
       let promoPrice=it.price??it.new_price??it.suggested_discounted_price??it.min_discounted_price??0;
       const meliPct=it.meli_percentage||0;
-      const received=meliPct&&orig>promoPrice?promoPrice+(orig-promoPrice)*meliPct/100:promoPrice;
-      const mc=calcMC(received,sku,comissao);
+      const rebateVal=meliPct&&orig>promoPrice?(orig-promoPrice)*meliPct/100:0;
+      const received=promoPrice+rebateVal;
+      const mc=calcMC(promoPrice,sku,comissao,rebateVal);
       const disc=orig&&promoPrice&&orig>promoPrice?Math.round((1-promoPrice/orig)*100):0;
+      const temRebate=meliPct>0||['SMART','PRICE_MATCHING','PRICE_MATCHING_MELI_ALL'].includes(o.p.type);
       return{iid,sku,title:det.title||iid,permalink:det.permalink||'',
         pname:o.p.name||o.p.id,ptype:o.p.type,fin:o.p.finish_date,
-        promoPrice,orig,disc,meliPct,received,
-        mcPct:mc?mc.pct:null,mcVal:mc?mc.mc:null,st:(it.status||'').toLowerCase()};
+        promoPrice,orig,disc,meliPct,received,temRebate,
+        mcPct:mc?mc.pct:null,mcVal:mc?mc.mc:null,mcDet:mc,st:(it.status||'').toLowerCase()};
     }).filter(r=>r.promoPrice>0);
     renderOportunidades(document.getElementById('oport-filter')?.value||'candidate');
   }catch(e){
@@ -1713,6 +1728,7 @@ function renderOportunidades(filtro){
   let rows=promoOffers;
   if(filtro==='candidate')rows=rows.filter(r=>r.st==='candidate');
   else if(filtro==='started')rows=rows.filter(r=>r.st==='started');
+  else if(filtro==='rebate')rows=rows.filter(r=>r.temRebate);
   rows=rows.slice().sort((a,b)=>(b.mcPct??-9999)-(a.mcPct??-9999));
   const withMc=rows.filter(r=>r.mcPct!==null);
   const nVale=withMc.filter(r=>r.mcPct>=15).length;
@@ -1725,7 +1741,7 @@ function renderOportunidades(filtro){
   }
   let h='<div style="padding:.6rem .8rem;border-bottom:1px solid var(--border);display:flex;gap:.3rem;flex-wrap:wrap;align-items:center">';
   h+='<span class="mc-ex">✅ '+nVale+' valem (≥15%)</span><span class="mc-re">⚠️ '+nReg+' regulares</span><span class="mc-ru">❌ '+nRuim+' ruins</span>';
-  h+='<span style="font-size:.62rem;color:var(--muted)">· ordenado por melhor margem · MC calculada sobre o que você recebe (com rebate ML)</span>';
+  h+='<span style="font-size:.62rem;color:var(--muted)">· ordenado por melhor margem · MC = preço − imposto − comissão − tarifa fixa/frete − custo + rebate (passe o mouse na MC para ver o detalhe)</span>';
   h+='</div>';
   h+='<div style="max-height:60vh;overflow-y:auto"><table><thead><tr><th>Produto</th><th>Campanha</th><th>Preço Promo</th><th style="text-align:center">MC</th><th style="text-align:center">Status</th></tr></thead><tbody>';
   rows.forEach(r=>{
@@ -1742,7 +1758,14 @@ function renderOportunidades(filtro){
     if(r.disc)h+=' <span style="background:#fef9c3;color:#a16207;font-size:.58rem;padding:.08rem .25rem;border-radius:3px">-'+r.disc+'%</span>';
     if(r.meliPct)h+='<div style="font-size:.58rem;color:#1d4ed8" title="Você recebe '+fmtBRL(r.received)+'">🎁 ML banca '+r.meliPct+'% → recebe '+fmtBRL(r.received)+'</div>';
     h+='</td>';
-    h+='<td style="text-align:center">'+mcBadge(r.mcPct)+(r.mcVal!==null?'<div style="font-size:.58rem;color:var(--muted);font-family:monospace">'+fmtBRL(r.mcVal)+'/un</div>':'')+'</td>';
+    let bd='';
+    if(r.mcDet){
+      bd='Custo: '+fmtBRL(r.mcDet.custo)+' · Imposto '+IMP_PADRAO+'%';
+      if(r.mcDet.taxaFixa)bd+=' · Tarifa fixa: '+fmtBRL(r.mcDet.taxaFixa);
+      if(r.mcDet.frete)bd+=' · Frete: '+fmtBRL(r.mcDet.frete);
+      if(r.mcDet.rebateVal)bd+=' · Rebate ML: +'+fmtBRL(r.mcDet.rebateVal);
+    }
+    h+='<td style="text-align:center" title="'+esc2(bd)+'">'+mcBadge(r.mcPct)+(r.mcVal!==null?'<div style="font-size:.58rem;color:var(--muted);font-family:monospace">'+fmtBRL(r.mcVal)+'/un</div>':'')+'</td>';
     h+='<td style="text-align:center">'+(r.st==='started'?'<span class="tag paid">✔ PARTICIPA</span>':r.st==='candidate'?'<span class="tag pending">📩 CONVITE</span>':'<span class="tag">'+esc2(r.st||'—')+'</span>')+'</td>';
     h+='</tr>';
   });
