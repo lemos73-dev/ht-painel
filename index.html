@@ -1524,7 +1524,7 @@ function mcBadge(pct){
   return'<span class="mc-ru">MC '+pct.toFixed(1)+'%</span>';
 }
 
-async function analyzePromoItems(promoId,containerId){
+async function analyzePromoItems(promoId,ptype,containerId){
   const el=document.getElementById(containerId);
   if(!el)return;
   el.style.display='';
@@ -1535,7 +1535,8 @@ async function analyzePromoItems(promoId,containerId){
     // Busca itens da promoção (paginado)
     let items=[],offset=0,total=9999;
     while(offset<total){
-      const d=await mlGet('/seller-promotions/'+promoId+'/items?app_version=v2&limit=50&offset='+offset);
+      const d=await mlGet('/seller-promotions/promotions/'+promoId+'/items?promotion_type='+encodeURIComponent(ptype||'')+'&app_version=v2&limit=50&offset='+offset);
+      if(d&&(d.error||d.message)&&!d.results)throw new Error(d.message||d.error);
       if(!d.results?.length)break;
       items=items.concat(d.results);
       total=d.paging?.total||0;offset+=50;
@@ -1622,14 +1623,14 @@ async function analyzePromoItems(promoId,containerId){
   }
 }
 
-function togglePromoAna(promoId,containerId){
+function togglePromoAna(promoId,ptype,containerId){
   const el=document.getElementById(containerId);
   if(!el)return;
   if(el.dataset.loaded==='1'){
     el.style.display=el.style.display==='none'?'':'none';
   }else{
     el.style.display='';
-    analyzePromoItems(promoId,containerId);
+    analyzePromoItems(promoId,ptype,containerId);
   }
 }
 
@@ -1649,13 +1650,17 @@ async function analyzeAllPromos(){
     }
     // Coleta as ofertas (itens) de cada campanha
     const offers=[];
+    const erros=[];
     for(let pi=0;pi<proms.length;pi++){
       const p=proms[pi];
       el.innerHTML='<div class="ld"><div class="sp"></div>Campanha '+(pi+1)+' de '+proms.length+' — '+((p.name||p.id)+'').substring(0,40)+'... ('+offers.length+' ofertas)</div>';
       let offset=0,total=9999,pages=0;
       while(offset<total&&pages<10){
         let d;
-        try{d=await mlGet('/seller-promotions/'+p.id+'/items?app_version=v2&limit=50&offset='+offset);}catch(e){break;}
+        try{
+          d=await mlGet('/seller-promotions/promotions/'+p.id+'/items?promotion_type='+encodeURIComponent(p.type||'')+'&app_version=v2&limit=50&offset='+offset);
+        }catch(e){erros.push((p.name||p.id)+': '+e.message);break;}
+        if(d&&(d.error||d.message)&&!d.results){erros.push((p.name||p.id)+': '+(d.message||d.error));break;}
         if(!d.results?.length)break;
         d.results.forEach(it=>offers.push({p,it}));
         total=d.paging?.total||0;offset+=50;pages++;
@@ -1663,7 +1668,10 @@ async function analyzeAllPromos(){
       }
     }
     if(!offers.length){
-      el.innerHTML='<div class="emp" style="padding:1.5rem"><div class="ei">📭</div>Nenhuma oferta encontrada nas campanhas</div>';
+      let msg='<div class="emp" style="padding:1.5rem"><div class="ei">📭</div>Nenhuma oferta encontrada nas campanhas';
+      if(erros.length)msg+='<div style="font-size:.62rem;color:#ef4444;margin-top:.5rem;text-align:left;max-width:480px;margin-left:auto;margin-right:auto">'+erros.slice(0,5).map(esc2).join('<br>')+'</div>';
+      msg+='</div>';
+      el.innerHTML=msg;
       return;
     }
     // Detalhes dos anúncios (título, SKU, preço atual)
@@ -1804,7 +1812,7 @@ function promoCardHtml(p,isCand){
   // Botão de análise de margem
   const cid='promo-ana-'+p.id;
   h+='<div style="margin-top:.5rem;text-align:right">';
-  h+='<button class="promo-ana-btn" onclick="togglePromoAna(\''+p.id+'\',\''+cid+'\')">📊 '+(isCand?'Analisar antes de participar':'Analisar margens')+'</button>';
+  h+='<button class="promo-ana-btn" onclick="togglePromoAna(\''+p.id+'\',\''+(p.type||'')+'\',\''+cid+'\')">📊 '+(isCand?'Analisar antes de participar':'Analisar margens')+'</button>';
   h+='</div>';
   h+='<div id="'+cid+'" class="promo-ana-box"></div>';
   h+='</div>';
