@@ -34,8 +34,9 @@ if (!preg_match('#^/[a-zA-Z0-9/_\-?=&%.,]+$#', $path)) {
     exit(json_encode(['error' => 'Path invalido']));
 }
 
-$method = $_SERVER['REQUEST_METHOD'];
-$body   = file_get_contents('php://input');
+$method      = $_SERVER['REQUEST_METHOD'];
+$body        = file_get_contents('php://input');
+$contentType = $_SERVER['CONTENT_TYPE'] ?? 'application/json';
 
 $ch = curl_init('https://api.mercadolibre.com' . $path);
 curl_setopt_array($ch, [
@@ -44,7 +45,7 @@ curl_setopt_array($ch, [
     CURLOPT_CUSTOMREQUEST  => $method,
     CURLOPT_HTTPHEADER     => [
         'Authorization: Bearer ' . $token,
-        'Content-Type: application/x-www-form-urlencoded',
+        'Content-Type: ' . $contentType,
         'Accept: application/json',
     ],
 ]);

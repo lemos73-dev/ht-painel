@@ -610,6 +610,17 @@ async function mlGet(path){
   return res.json();
 }
 
+async function mlPut(path,bodyObj){
+  const res=await fetch('ml.php?path='+encodeURIComponent(path),{
+    method:'PUT',
+    headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify(bodyObj)
+  });
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(d.message||d.error||('HTTP '+res.status));
+  return d;
+}
+
 async function loadUserInfo(){
   try{const u=await mlGet('/users/me');userId=u.id;const n=u.nickname||u.first_name||'Vendedor';document.getElementById('u-name').textContent=n;document.getElementById('u-av').textContent=n.substring(0,2).toUpperCase();}catch(e){console.error(e);}
 }
@@ -1140,6 +1151,40 @@ function getItemSku(it){
   return it.seller_sku||'—';
 }
 
+// Edição de estoque local direto no painel — grava no Mercado Livre
+async function editStock(id){
+  const it=allItems.find(x=>x.id===id);
+  if(!it)return;
+  const cur=it._upLocal!==undefined?it._upLocal:(it.available_quantity??0);
+  const v=prompt('Novo estoque LOCAL para '+id+'\n'+(it.title||'').substring(0,60)+'\n\nQuantidade atual: '+cur,cur);
+  if(v===null)return;
+  const n=parseInt(v,10);
+  if(isNaN(n)||n<0){alert('Quantidade inválida.');return;}
+  if(n===cur)return;
+  try{
+    if(it.user_product_id){
+      // Estoque Unificado: atualiza a localização do depósito do vendedor
+      const loc={type:'seller_warehouse',quantity:n};
+      if(it._upStoreId)loc.store_id=it._upStoreId;
+      await mlPut('/user-products/'+it.user_product_id+'/stock',{locations:[loc]});
+      it._upLocal=n;
+    }else{
+      await mlPut('/items/'+it.id,{available_quantity:n});
+      it.available_quantity=n;
+    }
+    renderItems();
+  }catch(e1){
+    // Fallback: tenta o caminho clássico do anúncio
+    try{
+      await mlPut('/items/'+it.id,{available_quantity:n});
+      if(it._upLocal!==undefined)it._upLocal=n;else it.available_quantity=n;
+      renderItems();
+    }catch(e2){
+      alert('Erro ao atualizar estoque:\n1) '+e1.message+'\n2) '+e2.message);
+    }
+  }
+}
+
 // Diagnóstico de anúncio — mostra dados crus da API para depuração de estoque
 async function diagItem(){
   const id=(prompt('Número do anúncio (MLB...):','MLB3559825266')||'').trim();
@@ -1220,7 +1265,7 @@ async function loadItems(){
           let loc=0,full=null;
           (st?.locations||[]).forEach(l=>{
             if(l.type==='meli_facility')full=(full||0)+(l.quantity||0);
-            else loc+=l.quantity||0;
+            else{loc+=l.quantity||0;if(l.store_id)it._upStoreId=l.store_id;}
           });
           it._upLocal=loc;it._upFull=full;
         }catch(e){}
@@ -1309,9 +1354,9 @@ function renderItems(){
     h+='<td style="font-size:.74rem">'+(it.title||'').substring(0,55)+'</td>';
     h+='<td style="font-family:\'DM Mono\',monospace;color:var(--accent);font-size:.68rem">'+it.sku+'</td>';
     h+='<td style="font-family:\'DM Mono\',monospace;color:var(--accent2)">'+fmtBRL(it.price||0)+'</td>';
-    // Estoque Local (anúncios normais)
+    // Estoque Local (editável — grava direto no ML)
     if(it.localQty!==null){
-      h+='<td class="stock-local'+sCls+'" style="text-align:center;font-weight:700">'+it.localQty+dot+'</td>';
+      h+='<td class="stock-local'+sCls+'" style="text-align:center;font-weight:700;white-space:nowrap">'+it.localQty+dot+'<button onclick="editStock(\''+it.id+'\')" title="Alterar estoque local" style="background:none;border:none;cursor:pointer;font-size:.65rem;opacity:.45;padding:0 0 0 .3rem" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.45">✏️</button></td>';
     }else{
       h+='<td style="text-align:center;color:var(--muted2)">—</td>';
     }
