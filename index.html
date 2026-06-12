@@ -475,7 +475,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
           <div class="sc" style="border-color:#fca5a5"><div class="lbl">🔴 Encerram em 3 dias</div><div class="val" id="ps-urgent" style="color:#ef4444">—</div><div class="sub">atenção urgente</div></div>
           <div class="sc" style="border-color:#fde68a"><div class="lbl">🟡 Encerram em 7 dias</div><div class="val" id="ps-week" style="color:#f59e0b">—</div><div class="sub">monitorar</div></div>
           <div class="sc green"><div class="lbl">🟢 Total Ativas</div><div class="val" id="ps-total" style="color:var(--accent2)">—</div><div class="sub">promoções</div></div>
-          <div class="sc blue"><div class="lbl">📦 Anúncios</div><div class="val" id="ps-items" style="color:var(--accent)">—</div><div class="sub">no catálogo</div></div>
+          <div class="sc blue"><div class="lbl">📩 Convites</div><div class="val" id="ps-items" style="color:var(--accent)">—</div><div class="sub">para avaliar</div></div>
         </div>
         <div class="tc">
           <div class="tc-h">
@@ -493,7 +493,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
           <div id="promo-ativos" style="max-height:65vh;overflow-y:auto"><div class="ld"><div class="sp"></div>Carregando...</div></div>
         </div>
         <div class="tc" style="margin-top:.8rem">
-          <div class="tc-h"><h3>📦 Catálogo <span id="nopromo-count" style="color:var(--muted);font-weight:400;font-size:.72rem"></span></h3></div>
+          <div class="tc-h"><h3>📩 Convites de Promoção <span id="nopromo-count" style="color:var(--muted);font-weight:400;font-size:.72rem"></span></h3></div>
           <div id="promo-inativos"></div>
         </div>
       </div>
@@ -533,11 +533,12 @@ let accessToken=localStorage.getItem('ml_token')||'',allOrders=[],allShipments={
 const PM={dashboard:{t:'Dashboard',s:'Visão geral das suas vendas'},orders:{t:'Pedidos',s:'Todos os pedidos recentes'},sep:{t:'Lista de Separação',s:'Agência e Flex — excluindo Full'},insights:{t:'Insights',s:'Análise de vendas e produtos'},items:{t:'Produtos',s:'Catálogo de produtos ativos'},metricas:{t:'Métricas por Anúncio',s:'Análise de vendas por produto'},promocoes:{t:'Promoções',s:'Anúncios em promoção e oportunidades'}};
 const IMP_PADRAO=16.15;
 const CUSTOS_BASE={
+'ALGQUACRE100':10.40,'CUPCMDXK1K':17.50,
 'LENVAB50CT':25.85,'LENVAB50':25.85,'FITMICBCWIL6':35.40,'SER0813MDX100':32.00,
 'ABSCRM12':72.00,'FITCRM510POR20':79.20,'FITCRM510POR10':39.60,'ABSCRM01':6.00,
 'SERDOSMDX3ML':22.50,'SERDSKCLL3ML':12.00,'ABSCRM03':17.76,'ABSCRM02':11.84,
 'FTCRM1010POR5':33.50,'FTCRM1010POR2':13.40,'FTCRM2510POR3':6.00,'FTCRM2510POR10':19.80,
-'FITCRM510POR5':19.80,'seringa':0.00,'COMEST13CRM50':57.00,'COMEST13CRM25':28.50,
+'FITCRM510POR5':19.80,'SERINGA':0.00,'COMEST13CRM50':57.00,'COMEST13CRM25':28.50,
 'COMEST13CRM30':34.20,'COMEST11CRM10':11.40,'AGURAQPRO25':54.00,'PAPTERSEN5':9.80,
 'ALGQUACRE600':58.20,'ALGQUACRE300':31.26,'ALGQUACRE200':20.80,'ALGQDRCRE200':20.80,
 'ALGQDRCRE100':9.70,'ESPKOLK150G':166.50,'ESPKOL10G':11.10,'BISSUPMDX11':14.62,
@@ -550,7 +551,7 @@ const CUSTOS_BASE={
 'ELEDSKP200':34.40,'EQPMCRMDX10':6.50,'BOLCOLMDX1':2.90,'BOLCOLMDX2':5.80,
 'BOLCOLMDX10':29.00,'BOLCOLMDX5':14.50,'ELEMEDTR300':92.00,'CATOCUDESK10':8.50,
 'AGMDXH2570':6.37,'SERDOSMDX5ML':20.00,'SERMDXCAT60':22.50,'LENBACRMR2CT':59.00,
-'ALSWAUNI500':14.25,'FTCIRVF100MKt3':17.22,'EQPMCRMDX50':32.50,'EQPMCRMDX100':65.00,
+'ALSWAUNI500':14.25,'FTCIRVF100MKT3':17.22,'EQPMCRMDX50':32.50,'EQPMCRMDX100':65.00,
 'CUPCMDXK500':8.75,'SE5MLLKMDX100':12.00,'MSKK959RB25':40.00,'AVMLDSTEE20':9.50,
 'AVMLDSTEE30':16.00,'AVSMAZDSTEE40':16.00,'TCADEEBCA100':5.30,'PPEDESKBCO100':6.00,
 'LEND70FC10':65.50,'SE3MLLKMDX100':11.00,'SE20MLLKMDX50':15.00,'SE10MLLKMDX100':19.00,
@@ -571,7 +572,7 @@ const CUSTOS_BASE={
 'ELEMEDTR1K':305.00,'ELEMEDTR100':30.00,'ELEMDX500':82.04,'CUPCMDX500CT':8.75,
 'CUPCMDX500':8.75,'BISFEAN11':150.00,'BISDESK22SM':20.83,'BISDESK22100':20.83,
 'BISDESK15SM':20.83,'BISDESK15100':20.83,'BISDESK11SM':20.83,'BISDESK11100':20.83,
-'ALSWAUNI100k10':30.50,'ALSWAUNI100':3.05,'ALSWAk1000':28.50,'ALSWA400SP':11.40,
+'ALSWAUNI100K10':30.50,'ALSWAUNI100':3.05,'ALSWAK1000':28.50,'ALSWA400SP':11.40,
 'ALSWA1KSP':28.50,'AGMDXH4012':6.91,'AGMDXH2507':6.05,'AGMDXH2055':6.37,
 'AGMDXH1330':6.59,'ADPTSPROT250':74.00,'ADPTAGUCRAL250':27.00
 };
@@ -1491,7 +1492,7 @@ async function selectMetItem(itemId, el){
 
 // ── MARGEM DE CONTRIBUIÇÃO ────────────────────────────────────────────────────
 function calcMC(preco,sku,comissaoPct){
-  const custo=CUSTOS_BASE[sku];
+  const custo=CUSTOS_BASE[(sku||'').toUpperCase().trim()];
   if(custo===undefined||preco<=0)return null;
   const mc=preco*(1-IMP_PADRAO/100-comissaoPct/100)-custo;
   return{mc,pct:mc/preco*100};
@@ -1537,33 +1538,61 @@ async function analyzePromoItems(promoId,containerId){
     // Mapa id → dados
     const detMap={};
     details.forEach(d=>{const b=d.body||d;if(b&&b.id)detMap[b.id]=b;});
-    // Calcula MC por item
+    // Calcula MC por item — considera rebate (ML banca parte do desconto)
     const rows=items.map(item=>{
       const iid=item.item_id||item.id;
       const det=detMap[iid]||{};
       const sku=getItemSku(det);
-      const promoPrice=item.new_price||det.sale_price?.amount||det.price||0;
       const origPrice=item.original_price||det.price||0;
-      const disc=item.discount_percentage||(origPrice&&promoPrice&&origPrice>promoPrice?Math.round((1-promoPrice/origPrice)*100):0);
-      const mc=calcMC(promoPrice,sku,comissao);
-      return{iid,sku,title:det.title||iid,promoPrice,origPrice,disc,mcPct:mc?mc.pct:null};
+      let promoPrice=item.price??item.new_price??item.suggested_discounted_price??item.min_discounted_price??0;
+      if(!promoPrice)promoPrice=det.sale_price?.amount||det.price||0;
+      const disc=origPrice&&promoPrice&&origPrice>promoPrice?Math.round((1-promoPrice/origPrice)*100):0;
+      const meliPct=item.meli_percentage||0;
+      // Com rebate, o vendedor recebe o preço promo + a parte do desconto que o ML banca
+      const received=meliPct&&origPrice>promoPrice?promoPrice+(origPrice-promoPrice)*meliPct/100:promoPrice;
+      const mc=calcMC(received,sku,comissao);
+      return{iid,sku,title:det.title||iid,promoPrice,origPrice,disc,meliPct,received,
+        mcPct:mc?mc.pct:null,mcVal:mc?mc.mc:null,st:item.status||''};
     }).sort((a,b)=>(b.mcPct??-9999)-(a.mcPct??-9999));
-    // Renderiza
+
+    // Resumo e recomendação
+    const withMc=rows.filter(r=>r.mcPct!==null);
+    const avg=withMc.length?withMc.reduce((s,r)=>s+r.mcPct,0)/withMc.length:null;
+    const nEx=withMc.filter(r=>r.mcPct>=25).length;
+    const nBo=withMc.filter(r=>r.mcPct>=15&&r.mcPct<25).length;
+    const nRe=withMc.filter(r=>r.mcPct>=5&&r.mcPct<15).length;
+    const nRu=withMc.filter(r=>r.mcPct<5).length;
+    let rec,recSt;
+    if(avg===null){rec='ℹ️ Sem custos cadastrados para estes SKUs';recSt='background:#f1f5f9;color:#64748b';}
+    else if(avg>=15&&nRu===0){rec='✅ VALE PARTICIPAR';recSt='background:#dcfce7;color:#15803d';}
+    else if(avg>=15){rec='✅ VALE — mas retire os '+nRu+' itens ruins';recSt='background:#dcfce7;color:#15803d';}
+    else if(avg>=5){rec='⚠️ AVALIAR item a item';recSt='background:#fef9c3;color:#a16207';}
+    else{rec='❌ NÃO VALE — margem muito baixa';recSt='background:#fee2e2;color:#b91c1c';}
+
     let h='<div style="padding:.45rem .55rem">';
-    h+='<div style="font-size:.62rem;color:#94a3b8;margin-bottom:.4rem">'+rows.length+' itens · ML '+comissao+'% · Imposto '+IMP_PADRAO+'% · ordenado por MC</div>';
-    // Legenda
-    h+='<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.4rem">';
-    h+='<span class="mc-ex">≥25% Excelente</span><span class="mc-bo">15-25% Boa</span><span class="mc-re">5-15% Regular</span><span class="mc-ru">&lt;5% Ruim</span>';
+    h+='<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.45rem">';
+    h+='<span style="font-size:.72rem;font-weight:800;padding:.3rem .7rem;border-radius:6px;'+recSt+'">'+rec+'</span>';
+    if(avg!==null)h+='<span style="font-size:.66rem;color:#475569">MC média <strong>'+avg.toFixed(1)+'%</strong> · '+withMc.length+' de '+rows.length+' itens com custo</span>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.45rem">';
+    h+='<span class="mc-ex">'+nEx+' excelente ≥25%</span><span class="mc-bo">'+nBo+' boa 15-25%</span><span class="mc-re">'+nRe+' regular 5-15%</span><span class="mc-ru">'+nRu+' ruim &lt;5%</span>';
+    h+='<span style="font-size:.6rem;color:#94a3b8;align-self:center">· comissão ML '+comissao+'% + imposto '+IMP_PADRAO+'%</span>';
     h+='</div>';
     h+='<div style="display:flex;flex-direction:column;gap:.22rem">';
     rows.forEach(r=>{
       h+='<div style="display:flex;align-items:center;gap:.4rem;padding:.32rem .4rem;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0">';
       h+='<div style="flex:1;min-width:0">';
       h+='<div style="font-size:.72rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0f172a">'+r.title+'</div>';
-      const discTxt=r.disc?'<span style="background:#fef9c3;color:#a16207;font-size:.6rem;padding:.1rem .3rem;border-radius:3px">-'+r.disc+'%</span> ':'';
-      h+='<div style="font-size:.62rem;color:#64748b;margin-top:.1rem">SKU: '+(r.sku||'—')+'&nbsp; '+discTxt+fmtBRL(r.promoPrice)+'</div>';
+      let l2='SKU: '+(r.sku||'—')+' · ';
+      if(r.origPrice&&r.origPrice>r.promoPrice)l2+='<s style="color:#94a3b8">'+fmtBRL(r.origPrice)+'</s> ';
+      l2+='<strong>'+fmtBRL(r.promoPrice)+'</strong>';
+      if(r.disc)l2+=' <span style="background:#fef9c3;color:#a16207;font-size:.6rem;padding:.1rem .3rem;border-radius:3px">-'+r.disc+'%</span>';
+      if(r.meliPct)l2+=' <span style="background:#dbeafe;color:#1d4ed8;font-size:.6rem;padding:.1rem .3rem;border-radius:3px" title="Você recebe '+fmtBRL(r.received)+' por unidade">ML banca '+r.meliPct+'% 🎁</span>';
+      if(r.st==='started')l2+=' <span style="background:#dcfce7;color:#15803d;font-size:.6rem;padding:.1rem .3rem;border-radius:3px">✔ participa</span>';
+      else if(r.st==='candidate')l2+=' <span style="background:#e0e7ff;color:#4338ca;font-size:.6rem;padding:.1rem .3rem;border-radius:3px">📩 convite</span>';
+      h+='<div style="font-size:.62rem;color:#64748b;margin-top:.1rem">'+l2+'</div>';
       h+='</div>';
-      h+=mcBadge(r.mcPct);
+      h+='<div style="text-align:right;flex-shrink:0">'+mcBadge(r.mcPct)+(r.mcVal!==null?'<div style="font-size:.6rem;color:#64748b;font-family:monospace;margin-top:.15rem">'+fmtBRL(r.mcVal)+'/un</div>':'')+'</div>';
       h+='</div>';
     });
     h+='</div></div>';
@@ -1601,93 +1630,95 @@ function promoCD(finish_date){
   return{text,days,cls:days<=3?'urgent':days<=7?'warning':'ok'};
 }
 
+async function fetchPromos(status){
+  let all=[],offset=0,total=999;
+  while(offset<total){
+    const d=await mlGet('/seller-promotions/users/'+userId+'?status='+status+'&app_version=v2&limit=50&offset='+offset);
+    if(!d.results?.length)break;
+    all=all.concat(d.results);
+    total=d.paging?.total||0;offset+=50;
+    if(d.results.length<50)break;
+  }
+  return all;
+}
+
+function promoCardHtml(p,isCand){
+  const cd=promoCD(p.finish_date);
+  const tc=PROMO_COLOR[p.type]||'#64748b';
+  const tl=PROMO_LABEL[p.type]||p.type;
+  const sd=p.start_date?new Date(p.start_date).toLocaleDateString('pt-BR'):'—';
+  const ed=p.finish_date?new Date(p.finish_date).toLocaleDateString('pt-BR'):'—';
+  const urgBg=isCand?'#fafaff':cd.days<=3?'#fff5f5':cd.days<=7?'#fffbeb':'#fff';
+  const urgBorder=isCand?'#c7d2fe':cd.days<=3?'#fca5a5':cd.days<=7?'#fde68a':'#e2e8f0';
+  let h='<div style="background:'+urgBg+';border:1px solid '+urgBorder+';border-radius:10px;padding:.85rem 1rem;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
+  // Header
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;gap:.4rem;flex-wrap:wrap">';
+  h+='<div style="display:flex;gap:.3rem;align-items:center">';
+  h+='<span style="font-size:.62rem;font-weight:700;padding:.18rem .5rem;border-radius:4px;background:'+tc+'22;color:'+tc+'">'+tl+'</span>';
+  if(isCand)h+='<span style="font-size:.62rem;font-weight:700;padding:.18rem .5rem;border-radius:4px;background:#e0e7ff;color:#4338ca">📩 CONVITE</span>';
+  h+='</div>';
+  const icon=cd.days<=3?'🔴':cd.days<=7?'🟡':'🟢';
+  h+='<span style="font-family:monospace;font-size:.68rem;font-weight:600;color:'+(cd.cls==='urgent'?'#ef4444':cd.cls==='warning'?'#f59e0b':'#10b981')+'">'+icon+' '+cd.text+'</span>';
+  h+='</div>';
+  // Nome
+  h+='<div style="font-size:.78rem;font-weight:600;color:#0f172a;margin-bottom:.5rem;line-height:1.4">'+(p.name||p.id)+'</div>';
+  // Barra de progresso (só ativas)
+  if(!isCand&&p.start_date&&p.finish_date){
+    const tot=new Date(p.finish_date)-new Date(p.start_date);
+    const pct=Math.min(100,Math.max(0,Math.round((new Date()-new Date(p.start_date))/tot*100)));
+    const barColor=cd.days<=3?'#ef4444':cd.days<=7?'#f59e0b':'#3b82f6';
+    h+='<div style="height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin-bottom:.3rem">';
+    h+='<div style="height:5px;width:'+pct+'%;background:'+barColor+';border-radius:3px"></div></div>';
+    h+='<div style="font-size:.62rem;color:#64748b;font-family:monospace">'+sd+' → '+ed+' · <strong>'+pct+'%</strong> concluído</div>';
+  }else if(p.start_date||p.finish_date){
+    h+='<div style="font-size:.62rem;color:#64748b;font-family:monospace">'+sd+' → '+ed+'</div>';
+  }
+  // Botão de análise de margem
+  const cid='promo-ana-'+p.id;
+  h+='<div style="margin-top:.5rem;text-align:right">';
+  h+='<button class="promo-ana-btn" onclick="togglePromoAna(\''+p.id+'\',\''+cid+'\')">📊 '+(isCand?'Analisar antes de participar':'Analisar margens')+'</button>';
+  h+='</div>';
+  h+='<div id="'+cid+'" class="promo-ana-box"></div>';
+  h+='</div>';
+  return h;
+}
+
 async function loadPromocoes(){
   document.getElementById('promo-ativos').innerHTML='<div class="ld"><div class="sp"></div>Buscando promoções...</div>';
-  document.getElementById('promo-inativos').innerHTML='';
+  document.getElementById('promo-inativos').innerHTML='<div class="ld"><div class="sp"></div>Buscando convites...</div>';
   try{
-    // Busca todas as promoções com paginação
-    let all=[];
-    let offset=0,total=999;
-    while(offset<total){
-      const d=await mlGet('/seller-promotions/users/'+userId+'?status=started&app_version=v2&limit=50&offset='+offset);
-      if(!d.results?.length)break;
-      all=all.concat(d.results);
-      total=d.paging?.total||0;offset+=50;
-      if(d.results.length<50)break;
-    }
-
-    // Ordena por término (mais urgentes primeiro, sem prazo por último)
-    all.sort((a,b)=>{
+    const byEnd=(a,b)=>{
       const da=a.finish_date?new Date(a.finish_date):new Date('2099-01-01');
       const db=b.finish_date?new Date(b.finish_date):new Date('2099-01-01');
       return da-db;
-    });
+    };
+    // Ativas + convites (candidate pode não ser suportado em todas as contas)
+    const ativas=(await fetchPromos('started')).sort(byEnd);
+    let convites=[];
+    try{convites=(await fetchPromos('candidate')).sort(byEnd);}catch(e){}
 
-    // Stats rápidos
-    const urgent=all.filter(p=>promoCD(p.finish_date).days<=3).length;
-    const week=all.filter(p=>{const d=promoCD(p.finish_date).days;return d>3&&d<=7;}).length;
-    document.getElementById('promo-count').textContent='— '+all.length+' ativas';
+    // Stats
+    const urgent=ativas.filter(p=>promoCD(p.finish_date).days<=3).length;
+    const week=ativas.filter(p=>{const d=promoCD(p.finish_date).days;return d>3&&d<=7;}).length;
+    document.getElementById('promo-count').textContent='— '+ativas.length+' ativas';
+    document.getElementById('nopromo-count').textContent='— '+convites.length+' disponíveis';
     const ps=document.getElementById('promo-stats');if(ps)ps.style.display='grid';
-    ['ps-urgent','ps-week','ps-total'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=[urgent,week,all.length][i];});
+    ['ps-urgent','ps-week','ps-total','ps-items'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=[urgent,week,ativas.length,convites.length][i];});
 
-    if(!all.length){
+    // Render ativas
+    if(!ativas.length){
       document.getElementById('promo-ativos').innerHTML='<div class="emp"><div class="ei">🏷️</div>Nenhuma promoção ativa</div>';
-      return;
+    }else{
+      document.getElementById('promo-ativos').innerHTML='<div style="padding:.7rem .6rem;display:flex;flex-direction:column;gap:.5rem">'+ativas.map(p=>promoCardHtml(p,false)).join('')+'</div>';
     }
-
-    let h='<div style="padding:.7rem .6rem;display:flex;flex-direction:column;gap:.5rem">';
-    all.forEach(p=>{
-      const cd=promoCD(p.finish_date);
-      const tc=PROMO_COLOR[p.type]||'#64748b';
-      const tl=PROMO_LABEL[p.type]||p.type;
-      const sd=p.start_date?new Date(p.start_date).toLocaleDateString('pt-BR'):'—';
-      const ed=p.finish_date?new Date(p.finish_date).toLocaleDateString('pt-BR'):'—';
-      const urgBg=cd.days<=3?'#fff5f5':cd.days<=7?'#fffbeb':'#fff';
-      const urgBorder=cd.days<=3?'#fca5a5':cd.days<=7?'#fde68a':'#e2e8f0';
-
-      // Barra de progresso
-      let pct=0,barColor='#3b82f6';
-      if(p.start_date&&p.finish_date){
-        const tot=new Date(p.finish_date)-new Date(p.start_date);
-        pct=Math.min(100,Math.max(0,Math.round((new Date()-new Date(p.start_date))/tot*100)));
-        barColor=cd.days<=3?'#ef4444':cd.days<=7?'#f59e0b':'#3b82f6';
-      }
-
-      const icon=cd.days<=3?'🔴':cd.days<=7?'🟡':'🟢';
-
-      h+='<div style="background:'+urgBg+';border:1px solid '+urgBorder+';border-radius:10px;padding:.85rem 1rem;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
-      // Header
-      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">';
-      h+='<span style="font-size:.62rem;font-weight:700;padding:.18rem .5rem;border-radius:4px;background:'+tc+'22;color:'+tc+'">'+tl+'</span>';
-      h+='<span style="font-family:monospace;font-size:.68rem;font-weight:600;color:'+(cd.cls==='urgent'?'#ef4444':cd.cls==='warning'?'#f59e0b':'#10b981')+'">'+icon+' '+cd.text+'</span>';
-      h+='</div>';
-      // Nome
-      h+='<div style="font-size:.78rem;font-weight:600;color:#0f172a;margin-bottom:.5rem;line-height:1.4">'+(p.name||p.id)+'</div>';
-      // Barra
-      if(p.start_date&&p.finish_date){
-        h+='<div style="height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin-bottom:.3rem">';
-        h+='<div style="height:5px;width:'+pct+'%;background:'+barColor+';border-radius:3px;transition:width .3s"></div></div>';
-        h+='<div style="font-size:.62rem;color:#64748b;font-family:monospace">'+sd+' → '+ed+' · <strong>'+pct+'%</strong> concluído</div>';
-      }
-      // Botão de análise de margem
-      const cid='promo-ana-'+p.id;
-      h+='<div style="margin-top:.5rem;text-align:right">';
-      h+='<button class="promo-ana-btn" onclick="togglePromoAna(\''+p.id+'\',\''+cid+'\')">📊 Analisar margens</button>';
-      h+='</div>';
-      h+='<div id="'+cid+'" class="promo-ana-box"></div>';
-      h+='</div>';
-    });
-    h+='</div>';
-    document.getElementById('promo-ativos').innerHTML=h;
     document.getElementById('promo-ativos').dataset.loaded='1';
 
-    // Contagem de anúncios ativos
-    const s1=await mlGet('/users/'+userId+'/items/search?status=active&limit=1');
-    const total_items=s1.paging?.total||0;
-    document.getElementById('nopromo-count').textContent='— '+total_items+' anúncios ativos';
-    const psi=document.getElementById('ps-items');if(psi)psi.textContent=total_items;
-    document.getElementById('promo-inativos').innerHTML='<div class="emp" style="padding:1.5rem"><div class="ei">📦</div><strong>'+total_items+'</strong> anúncios ativos no catálogo</div>';
-
+    // Render convites
+    if(!convites.length){
+      document.getElementById('promo-inativos').innerHTML='<div class="emp" style="padding:1.5rem"><div class="ei">📩</div>Nenhum convite de promoção no momento</div>';
+    }else{
+      document.getElementById('promo-inativos').innerHTML='<div style="padding:.7rem .6rem;display:flex;flex-direction:column;gap:.5rem">'+convites.map(p=>promoCardHtml(p,true)).join('')+'</div>';
+    }
   }catch(e){
     document.getElementById('promo-ativos').innerHTML='<div style="margin:1rem;padding:.7rem;background:#fff5f5;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;font-size:.75rem">Erro: '+e.message+'</div>';
   }
