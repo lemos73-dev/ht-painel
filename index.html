@@ -637,20 +637,37 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         <!-- CARD ESCURO: DADOS DO PRODUTO -->
         <div class="cz-dark">
           <div class="cz-lbl">dados do produto</div>
-          <div class="cz-fields">
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:.6rem;margin-bottom:.6rem">
             <div class="cz-field"><label>nome do produto</label><input type="text" id="cz-nome" placeholder="ex: Seringa Medix 3ml"></div>
             <div class="cz-field"><label>id / sku</label><input type="text" id="cz-sku" placeholder="ex: SER3ML"></div>
-            <div class="cz-field" style="grid-column:span 2;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.6rem">
-              <div class="cz-field"><label>custo do produto</label><div class="pre"><span>R$</span><input type="number" id="cz-custo" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
-              <div class="cz-field"><label>embalagem + etiqueta</label><div class="pre"><span>R$</span><input type="number" id="cz-embal" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
-              <div class="cz-field"><label>imposto / DAS</label><div class="pre"><span>%</span><input type="number" id="cz-imp" step="0.01" min="0" max="100" value="16.15" oninput="czCalc()"></div></div>
-              <div class="cz-field"><label>outros custos</label><div class="pre"><span>R$</span><input type="number" id="cz-outros" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+            <div class="cz-field"><label>peso (kg)</label><div class="pre"><span>kg</span><input type="number" id="cz-peso" step="0.01" min="0" placeholder="0,00" oninput="czTriggerFrete()"></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.6rem">
+            <div class="cz-field"><label>custo do produto</label><div class="pre"><span>R$</span><input type="number" id="cz-custo" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+            <div class="cz-field"><label>embalagem + etiqueta</label><div class="pre"><span>R$</span><input type="number" id="cz-embal" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+            <div class="cz-field">
+              <label>imposto (%)</label>
+              <div class="pre"><span>%</span><input type="text" inputmode="numeric" id="cz-imp" placeholder="0,00" value="16,15" oninput="czPctMask(this)" onblur="czCalc()"></div>
             </div>
+            <div class="cz-field"><label>outros custos</label><div class="pre"><span>R$</span><input type="number" id="cz-outros" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
           </div>
           <div class="cz-concorrente">
             <label>preço do concorrente — <em style="color:#94a3b8;font-style:normal">aplica em todos os canais de uma vez</em></label>
-            <div class="pre"><span>R$</span><input type="number" id="cz-concorrente" step="0.01" min="0" placeholder="0,00" oninput="czAplicarConcorrente()"></div>
-            <button class="cz-btn-aplicar" onclick="czAplicarConcorrente(true)">aplicar em todos</button>
+            <div class="pre"><span>R$</span><input type="number" id="cz-concorrente" step="0.01" min="0" placeholder="0,00"></div>
+            <button class="cz-btn-aplicar" onclick="czAplicarConcorrente()">aplicar em todos</button>
+          </div>
+          <div style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid #1e3a6e;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+            <span style="font-size:.6rem;color:#7dd3fc;font-weight:700;letter-spacing:.8px;text-transform:uppercase">frete ML</span>
+            <label style="display:flex;align-items:center;gap:.35rem;font-size:.68rem;color:#94a3b8;cursor:pointer">
+              <input type="radio" name="cz-frete-modo" value="auto" id="czfm-auto" checked onchange="czFreteModo()"> automático pela tabela
+            </label>
+            <label style="display:flex;align-items:center;gap:.35rem;font-size:.68rem;color:#94a3b8;cursor:pointer">
+              <input type="radio" name="cz-frete-modo" value="concorrente" id="czfm-conc" onchange="czFreteModo()"> frete do concorrente
+            </label>
+            <div id="czfm-conc-wrap" style="display:none;align-items:center;gap:.3rem">
+              <div class="pre" style="max-width:130px"><span>R$</span><input type="number" id="cz-frete-conc" step="0.01" min="0" placeholder="0,00" oninput="czAutoFrete()"></div>
+            </div>
+            <span id="czfm-status" style="font-size:.62rem;color:#4ade80;margin-left:.3rem"></span>
           </div>
         </div>
 
@@ -674,7 +691,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
             </div>
             <div class="cz-canal-body">
               <div class="cz-canal-inputs">
-                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlc-preco" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlc-preco" step="0.01" min="0" placeholder="0,00" oninput="czTriggerFrete()"></div></div>
                 <div class="cz-canal-input-group"><label>comissão</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlc-com" step="0.1" value="11" oninput="czCalc()"></div></div>
                 <div class="cz-canal-input-group"><label>frete</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlc-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
                 <div class="cz-canal-input-group"><label>marketing</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlc-mkt" step="0.1" min="0" value="0" oninput="czCalc()"></div></div>
@@ -706,7 +723,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
             </div>
             <div class="cz-canal-body">
               <div class="cz-canal-inputs">
-                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlp-preco" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlp-preco" step="0.01" min="0" placeholder="0,00" oninput="czTriggerFrete()"></div></div>
                 <div class="cz-canal-input-group"><label>comissão</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlp-com" step="0.1" value="16" oninput="czCalc()"></div></div>
                 <div class="cz-canal-input-group"><label>frete</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlp-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
                 <div class="cz-canal-input-group"><label>marketing</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlp-mkt" step="0.1" min="0" value="0" oninput="czCalc()"></div></div>
@@ -729,10 +746,19 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
             </div>
             <div class="cz-canal-body">
               <div class="cz-canal-inputs">
-                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-preco" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
-                <div class="cz-canal-input-group"><label>comissão</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-com" step="0.1" value="14" oninput="czCalc()"></div></div>
-                <div class="cz-canal-input-group"><label>frete</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
-                <div class="cz-canal-input-group"><label>taxa transação</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-tx" step="0.1" min="0" value="2" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-preco" step="0.01" min="0" placeholder="0,00" oninput="czShopeeAuto()"></div></div>
+                <div class="cz-canal-input-group">
+                  <label>comissão <span id="czv-sh-com-lbl" style="font-size:.58rem;color:#ee4d2d;font-weight:700"></span></label>
+                  <div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-com" step="0.1" value="20" oninput="czCalc()" readonly style="background:rgba(238,77,45,.04)"></div>
+                </div>
+                <div class="cz-canal-input-group">
+                  <label>taxa fixa</label>
+                  <div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-fixa" step="0.01" min="0" value="4" readonly style="background:rgba(238,77,45,.04)"></div>
+                </div>
+                <div class="cz-canal-input-group"><label>frete (manual)</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+              </div>
+              <div style="font-size:.65rem;color:var(--muted);margin-bottom:.6rem;padding:.4rem .6rem;background:rgba(238,77,45,.04);border-radius:5px;border:1px solid rgba(238,77,45,.12)" id="czv-sh-info">
+                Subsídio Pix: <strong id="czv-sh-pix">—</strong> &nbsp;|&nbsp; Comissão calculada automaticamente pela faixa de preço Shopee
               </div>
               <div class="cz-metricas">
                 <div class="cz-metric"><div class="cm-lbl">custos marketplace</div><div class="cm-pct" id="czm-sh-cpct">—</div><div class="cm-val" id="czm-sh-cval">—</div></div>
@@ -2099,12 +2125,87 @@ async function loadPromocoes(){
 /* ════════════════════════════════════════
    CALCULADORA DE PREÇOS
    ════════════════════════════════════════ */
+
+// Tabela frete ML: [peso_max_kg, [frete por faixa de preço]]
+// Faixas de preço: 0-18.99 | 19-48.99 | 49-78.99 | 79-99.99 | 100-119.99 | 120-149.99 | 150-199.99 | 200+
+var CZ_ML_FRETE=[
+  [0.3,  [5.65,6.85,8.15,12.95,14.95,16.95,19.05,21.65]],
+  [0.5,  [5.95,6.95,8.25,13.85,16.15,18.15,20.45,23.25]],
+  [1,    [6.05,7.15,8.45,14.45,16.85,19.05,21.35,24.45]],
+  [1.5,  [6.15,7.35,8.65,14.75,17.15,19.45,21.75,25.45]],
+  [2,    [6.25,7.45,8.75,15.05,17.65,19.85,22.25,25.55]],
+  [3,    [6.35,8.65,9.15,16.45,19.15,21.65,24.35,27.05]],
+  [4,    [6.45,8.75,9.75,17.85,20.75,23.35,26.35,29.25]],
+  [5,    [6.55,8.85,10.25,19.75,22.85,26.05,29.25,32.45]],
+  [6,    [6.65,8.95,10.35,25.95,29.15,33.35,36.45,40.85]],
+  [7,    [6.75,9.05,10.45,27.55,31.65,36.75,40.85,45.25]],
+  [8,    [6.85,9.25,10.55,29.45,34.35,39.25,44.15,49.35]],
+  [9,    [6.95,9.35,10.65,30.25,35.25,40.35,45.35,50.75]],
+  [10,   [7.05,9.45,10.85,38.25,45.05,51.95,58.75,65.85]],
+  [11,   [7.05,9.65,11.05,41.65,48.55,55.45,62.35,69.35]],
+  [13,   [7.15,10.05,11.45,42.55,49.75,56.85,63.85,70.95]],
+  [15,   [7.25,10.25,11.65,45.55,52.95,60.55,68.15,75.65]],
+  [17,   [7.35,10.45,11.85,48.95,56.55,64.05,71.35,79.35]],
+  [20,   [7.45,10.65,12.05,55.15,64.35,73.55,82.75,91.95]],
+  [25,   [7.65,11.05,12.25,64.55,75.75,85.45,96.25,106.85]],
+  [30,   [7.75,11.25,12.45,66.45,76.05,86.25,97.15,107.85]],
+  [40,   [7.85,11.45,12.65,68.35,79.65,89.75,100.05,107.95]],
+  [50,   [7.95,11.65,12.85,70.95,81.85,92.85,103.45,111.65]],
+  [60,   [8.05,11.85,13.05,75.55,87.25,99.05,110.25,119.05]],
+  [70,   [8.15,12.05,13.25,80.95,93.75,105.95,118.05,127.45]],
+  [80,   [8.25,12.25,13.45,84.65,97.95,110.75,123.35,133.15]],
+  [90,   [8.35,12.45,13.65,94.05,108.35,122.95,136.95,147.85]],
+  [100,  [8.45,12.65,13.85,107.45,124.85,140.45,156.45,168.85]],
+  [125,  [8.55,12.85,14.05,120.15,138.95,156.95,174.85,188.85]],
+  [150,  [8.65,12.85,14.25,127.45,147.05,166.55,185.55,200.35]],
+  [Infinity,[8.75,12.85,14.45,167.05,193.35,218.45,243.45,262.85]]
+];
+var CZ_ML_FRETE_BREAKS=[0,19,49,79,100,120,150,200];
+
+// Tabela comissão Shopee por faixa de preço
+// [preço_min, comissao_pct, taxa_fixa, subsidio_pix_pct]
+var CZ_SH_COM=[
+  [0,   20, 4,  0],
+  [80,  14, 16, 5],
+  [100, 14, 20, 5],
+  [200, 14, 26, 5],
+  [500, 14, 26, 8]
+];
+
+function czShopeeComissao(preco){
+  if(!preco)return{pct:0,fixa:0,pix:0};
+  var row=CZ_SH_COM[0];
+  for(var i=CZ_SH_COM.length-1;i>=0;i--){if(preco>CZ_SH_COM[i][0]){row=CZ_SH_COM[i];break;}}
+  return{pct:row[1],fixa:row[2],pix:row[3]};
+}
+
+function czMlFrete(peso,preco){
+  if(!peso||!preco)return null;
+  var pi=CZ_ML_FRETE_BREAKS.reduce(function(acc,b,i){return preco>=b?i:acc;},0);
+  for(var i=0;i<CZ_ML_FRETE.length;i++){if(peso<=CZ_ML_FRETE[i][0])return CZ_ML_FRETE[i][1][pi];}
+  return CZ_ML_FRETE[CZ_ML_FRETE.length-1][1][pi];
+}
+
+// Máscara de percentual: digitar "1668" → "16,68"
+function czPctMask(el){
+  var raw=el.value.replace(/\D/g,'');
+  if(!raw){el.value='';return;}
+  var cents=parseInt(raw,10);
+  var val=(cents/100).toFixed(2);
+  el.value=val.replace('.',',');
+  czCalc();
+}
+function czGetPct(id){
+  var el=document.getElementById(id);if(!el)return 0;
+  return parseFloat((el.value||'0').replace(',','.'))||0;
+}
+
 var czMode='preco';
 var czCanais={mlc:true,mlp:true,sh:true};
 
 function czSetMode(m,el){
   czMode=m;
-  document.querySelectorAll('.cz-mtab[id^="czm-"]').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.cz-mtab[id^="czm-"]').forEach(function(b){b.classList.remove('on');});
   if(el)el.classList.add('on');
   czCalc();
 }
@@ -2115,55 +2216,94 @@ function czToggleCanal(c,el){
   document.getElementById('czcanal-'+c).style.display=czCanais[c]?'':'none';
 }
 
-function czAplicarConcorrente(forcar){
+function czFreteModo(){
+  var modo=document.querySelector('input[name="cz-frete-modo"]:checked');
+  var modoVal=modo?modo.value:'auto';
+  var wrap=document.getElementById('czfm-conc-wrap');
+  if(wrap)wrap.style.display=modoVal==='concorrente'?'flex':'none';
+  czTriggerFrete();
+}
+
+function czAutoFrete(){
+  // Atualiza valores de frete — NÃO chama czCalc para evitar loop
+  var modo=document.querySelector('input[name="cz-frete-modo"]:checked');
+  var modoVal=modo?modo.value:'auto';
+  var status=document.getElementById('czfm-status');
+  if(modoVal==='concorrente'){
+    var fc=czN('cz-frete-conc');
+    ['mlc','mlp'].forEach(function(c){
+      var el=document.getElementById('czv-'+c+'-frete');
+      if(el){el.value=fc>0?fc.toFixed(2):'';el.style.background=fc>0?'rgba(251,191,36,.08)':'';}
+    });
+    if(status)status.textContent=fc>0?'frete do concorrente aplicado':'';
+    return;
+  }
+  var peso=czN('cz-peso');
+  ['mlc','mlp'].forEach(function(c){
+    var preco=czN('czv-'+c+'-preco');
+    var fr=czMlFrete(peso,preco);
+    var el=document.getElementById('czv-'+c+'-frete');
+    if(el){
+      if(fr!==null){el.value=fr.toFixed(2);el.style.background='rgba(74,222,128,.06)';}
+      else{el.value='';el.style.background='';}
+    }
+  });
+  if(status)status.textContent=peso>0?'calculado pela tabela ML':'';
+}
+
+function czTriggerFrete(){czAutoFrete();czCalc();}
+
+function czAplicarConcorrente(){
   var v=parseFloat(document.getElementById('cz-concorrente').value)||0;
   if(!v)return;
   ['mlc','mlp','sh'].forEach(function(c){
     var el=document.getElementById('czv-'+c+'-preco');
     if(el)el.value=v.toFixed(2);
   });
-  czCalc();
+  czShopeeAuto();
+  czTriggerFrete();
 }
 
-function czN(id){return parseFloat(document.getElementById(id)&&document.getElementById(id).value)||0;}
+function czN(id){var el=document.getElementById(id);return parseFloat((el&&el.value)||0)||0;}
 
 function czCalcCanal(canal,preco,com,frete,extra){
   var custo=czN('cz-custo');
   var embal=czN('cz-embal');
-  var imp=czN('cz-imp')/100;
+  var imp=czGetPct('cz-imp')/100;
   var outros=czN('cz-outros');
   var custoTotal=custo+embal+outros;
-
   if(!preco)return null;
   var impVal=preco*imp;
   var comVal=preco*(com/100);
-  var mktVal=preco*(extra/100);
-  var custoMkt=comVal+frete+mktVal;
+  var extraVal=preco*(extra/100);
+  var custoMkt=comVal+frete+extraVal;
   var custoTotalVenda=custoTotal+impVal+custoMkt;
   var lucro=preco-custoTotalVenda;
   var margem=preco>0?(lucro/preco)*100:0;
   var pctMkt=preco>0?(custoMkt/preco)*100:0;
   var pctTotal=preco>0?(custoTotalVenda/preco)*100:0;
-  var precoMin=custoTotal/(1-imp-com/100-extra/100-(frete/preco||0));
-  return{preco,lucro,margem,pctMkt,pctTotal,custoMkt,custoTotalVenda,impVal,comVal,mktVal,precoMin:Math.max(0,precoMin)};
+  // preço mínimo: resolve preco = custoTotal + preco*imp + preco*com/100 + frete + preco*extra/100
+  var taxaTotal=imp+com/100+extra/100;
+  var precoMin=taxaTotal<1?(custoTotal+frete)/(1-taxaTotal):0;
+  return{preco,lucro,margem,pctMkt,pctTotal,custoMkt,custoTotalVenda,impVal,comVal,extraVal,precoMin:Math.max(0,precoMin)};
 }
 
-function czFmt(n){return'R$ '+n.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
-function czPct(n){return n.toFixed(1)+'%'}
-function czColor(m){return m>=25?'#4ade80':m>=10?'#fbbf24':'#f87171'}
+function czFmt(n){return'R$ '+n.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+function czPct(n){return n.toFixed(1)+'%';}
+function czColor(m){return m>=25?'#4ade80':m>=10?'#fbbf24':'#f87171';}
 
 function czRenderCanal(id,preco,com,frete,extra){
   var r=czCalcCanal(id,preco,com,frete,extra);
   var pfx='czm-'+id+'-';
   if(!r){
-    [pfx+'cpct',pfx+'cval',pfx+'tpct',pfx+'tval',pfx+'mpct',pfx+'mval'].forEach(function(x){
-      var el=document.getElementById(x);if(el)el.textContent='—';
+    ['cpct','cval','tpct','tval','mpct','mval'].forEach(function(x){
+      var el=document.getElementById(pfx+x);if(el){el.textContent='—';el.style.color='';}
     });
     var rm=document.getElementById(pfx+'min');if(rm)rm.innerHTML='';
     var rr=document.getElementById('czr-'+id+'-resumo');if(rr)rr.textContent='—';
     return;
   }
-  var set=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  var set=function(sid,v){var el=document.getElementById(sid);if(el)el.textContent=v;};
   set(pfx+'cpct',czPct(r.pctMkt));
   set(pfx+'cval','- '+czFmt(r.custoMkt));
   set(pfx+'tpct',czPct(r.pctTotal));
@@ -2177,10 +2317,70 @@ function czRenderCanal(id,preco,com,frete,extra){
   if(rs)rs.textContent='margem '+czPct(r.margem)+' • lucro '+czFmt(r.lucro);
 }
 
+function czShopeeAuto(){
+  var preco=czN('czv-sh-preco');
+  var t=czShopeeComissao(preco);
+  var comEl=document.getElementById('czv-sh-com');
+  var fixaEl=document.getElementById('czv-sh-fixa');
+  var lblEl=document.getElementById('czv-sh-com-lbl');
+  var pixEl=document.getElementById('czv-sh-pix');
+  if(comEl)comEl.value=t.pct;
+  if(fixaEl)fixaEl.value=t.fixa;
+  if(lblEl)lblEl.textContent=preco>0?'(automático)':'';
+  if(pixEl)pixEl.textContent=t.pix>0?t.pix+'%':'não aplicável';
+  czRenderShopee();
+}
+
+function czCalcShopee(preco){
+  // Shopee: comissão % sobre preço + taxa fixa + frete manual
+  var custo=czN('cz-custo');
+  var embal=czN('cz-embal');
+  var imp=czGetPct('cz-imp')/100;
+  var outros=czN('cz-outros');
+  var custoTotal=custo+embal+outros;
+  if(!preco)return null;
+  var t=czShopeeComissao(preco);
+  var frete=czN('czv-sh-frete');
+  var impVal=preco*imp;
+  var comVal=preco*(t.pct/100);
+  var fixa=t.fixa;
+  var custoMkt=comVal+fixa+frete;
+  var custoTotalVenda=custoTotal+impVal+custoMkt;
+  var lucro=preco-custoTotalVenda;
+  var margem=preco>0?(lucro/preco)*100:0;
+  var pctMkt=preco>0?(custoMkt/preco)*100:0;
+  var pctTotal=preco>0?(custoTotalVenda/preco)*100:0;
+  var taxaTotal=imp+t.pct/100;
+  var precoMin=taxaTotal<1?(custoTotal+fixa+frete)/(1-taxaTotal):0;
+  return{preco,lucro,margem,pctMkt,pctTotal,custoMkt,custoTotalVenda,precoMin:Math.max(0,precoMin)};
+}
+
+function czRenderShopee(){
+  var preco=czN('czv-sh-preco');
+  var r=czCalcShopee(preco);
+  var pfx='czm-sh-';
+  if(!r){
+    ['cpct','cval','tpct','tval','mpct','mval'].forEach(function(x){
+      var el=document.getElementById(pfx+x);if(el){el.textContent='—';el.style.color='';}
+    });
+    var rm=document.getElementById(pfx+'min');if(rm)rm.innerHTML='';
+    var rr=document.getElementById('czr-sh-resumo');if(rr)rr.textContent='—';
+    return;
+  }
+  var set=function(sid,v){var el=document.getElementById(sid);if(el)el.textContent=v;};
+  set(pfx+'cpct',czPct(r.pctMkt));set(pfx+'cval','- '+czFmt(r.custoMkt));
+  set(pfx+'tpct',czPct(r.pctTotal));set(pfx+'tval','- '+czFmt(r.custoTotalVenda));
+  set(pfx+'mpct',czPct(r.margem));
+  var mEl=document.getElementById(pfx+'mpct');if(mEl)mEl.style.color=czColor(r.margem);
+  set(pfx+'mval',czFmt(r.lucro));
+  var mn=document.getElementById(pfx+'min');if(mn)mn.innerHTML='preço mínimo sem prejuízo: <strong>'+czFmt(r.precoMin)+'</strong>';
+  var rs=document.getElementById('czr-sh-resumo');if(rs)rs.textContent='margem '+czPct(r.margem)+' • lucro '+czFmt(r.lucro);
+}
+
 function czCalc(){
   czRenderCanal('mlc',czN('czv-mlc-preco'),czN('czv-mlc-com'),czN('czv-mlc-frete'),czN('czv-mlc-mkt'));
   czRenderCanal('mlp',czN('czv-mlp-preco'),czN('czv-mlp-com'),czN('czv-mlp-frete'),czN('czv-mlp-mkt'));
-  czRenderCanal('sh',czN('czv-sh-preco'),czN('czv-sh-com'),czN('czv-sh-frete'),czN('czv-sh-tx'));
+  czRenderShopee();
 }
 
 function showPanel(n,el){
