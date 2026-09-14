@@ -256,6 +256,23 @@ tr:hover td{background:#f8faff}
   .sc .val{font-size:1.4rem}
   th:nth-child(1),td:nth-child(1){display:none}
 }
+/* CALCULADORA RESPONSIVO */
+@media(max-width:768px){
+  .cz-fields{grid-template-columns:1fr 1fr!important}
+  .cz-fields>div:last-child{grid-column:span 2;display:grid!important;grid-template-columns:1fr 1fr!important}
+  .cz-canal-inputs{grid-template-columns:1fr 1fr!important}
+  .cz-metricas{grid-template-columns:1fr 1fr!important}
+  .cz-mode{flex-wrap:wrap;gap:.3rem}
+  .cz-concorrente{flex-wrap:wrap}
+  .cz-concorrente .pre{max-width:100%!important;flex:1}
+}
+@media(max-width:480px){
+  .cz-fields{grid-template-columns:1fr!important}
+  .cz-fields>div:last-child{grid-column:span 1;display:grid!important;grid-template-columns:1fr 1fr!important}
+  .cz-canal-inputs{grid-template-columns:1fr 1fr!important}
+  .cz-metricas{grid-template-columns:1fr!important}
+  .cz-metric.destaque{grid-column:span 1}
+}
 
 /* SEPARAÇÃO — upload PDFs e lista interativa */
 .sep-zones{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.6rem}
@@ -324,6 +341,9 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
       <button class="btn-a s" onclick="connectWithToken()">Entrar com Token</button>
       <div class="field" style="margin-top:.8rem"><label>Código OAuth (code=TG-...)</label><input type="text" id="inp-code" placeholder="TG-..." /></div>
       <button class="btn-a s" onclick="exchangeCode()">Trocar Código por Token</button>
+      <div class="div">ou</div>
+      <button class="btn-a s" onclick="enterCalcOnly()" style="background:#f0f9f4;border:1.5px solid #10b981;color:#059669;font-weight:700">🧮 Entrar só com a Calculadora</button>
+      <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:.4rem">Sem precisar de conta ML — para colaboradores</p>
     </div>
   </div>
 </div>
@@ -344,6 +364,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
       <button class="nav-btn" id="nav-items" onclick="showPanel('items',this)"><span class="ni">🏷️</span>Produtos <span id="stock-badge" style="display:none" class="nav-badge">!</span></button>
       <button class="nav-btn" onclick="showPanel('metricas',this)"><span class="ni">🔍</span>Métricas</button>
       <button class="nav-btn" onclick="showPanel('promocoes',this)"><span class="ni">🏷️</span>Promoções</button>
+      <button class="nav-btn" onclick="showPanel('calc',this)"><span class="ni">🧮</span>Calculadora</button>
     </div>
     <div class="sb-foot">
       <div class="u-pill"><div class="u-av" id="u-av">HT</div><div class="u-inf"><div class="name" id="u-name">...</div><div class="st">● Conectado</div></div></div>
@@ -547,6 +568,184 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         </div>
       </div>
 
+      <!-- CALCULADORA -->
+      <div id="panel-calc" class="panel">
+        <style>
+        /* ── CALC BASE ── */
+        .cz-dark{background:#0d1f3c;border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:.9rem;color:#e2e8f0}
+        .cz-lbl{font-size:.6rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#7dd3fc;margin-bottom:.7rem}
+        .cz-fields{display:grid;grid-template-columns:2fr 1fr 2fr 1fr;gap:.6rem;align-items:end}
+        .cz-field{display:flex;flex-direction:column;gap:.3rem}
+        .cz-field label{font-size:.62rem;color:#94a3b8;font-weight:500}
+        .cz-field input{background:#132447;border:1px solid #1e3a6e;border-radius:6px;padding:.45rem .7rem;color:#e2e8f0;font-family:'Roboto Mono',monospace;font-size:.82rem;outline:none;width:100%;transition:border .15s}
+        .cz-field input:focus{border-color:#3b82f6}
+        .cz-field .pre{display:flex;align-items:center;background:#132447;border:1px solid #1e3a6e;border-radius:6px;overflow:hidden}
+        .cz-field .pre span{padding:0 .5rem;font-size:.72rem;color:#7dd3fc;font-weight:700;flex-shrink:0}
+        .cz-field .pre input{border:none;background:transparent;flex:1;padding:.45rem .4rem}
+        .cz-field .pre input:focus{border:none}
+        .cz-concorrente{display:flex;align-items:center;gap:.6rem;margin-top:.8rem;padding-top:.8rem;border-top:1px solid #1e3a6e}
+        .cz-concorrente label{font-size:.62rem;color:#94a3b8;white-space:nowrap;flex-shrink:0}
+        .cz-concorrente .pre{display:flex;align-items:center;background:#132447;border:1px solid #1e3a6e;border-radius:6px;overflow:hidden;flex:1;max-width:180px}
+        .cz-concorrente .pre span{padding:0 .5rem;font-size:.72rem;color:#7dd3fc;font-weight:700}
+        .cz-concorrente .pre input{border:none;background:transparent;flex:1;padding:.4rem .3rem;color:#e2e8f0;font-family:'Roboto Mono',monospace;font-size:.78rem;outline:none}
+        .cz-btn-aplicar{background:#4ade80;color:#0d1f3c;border:none;border-radius:6px;padding:.4rem .9rem;font-size:.7rem;font-weight:800;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+        .cz-btn-aplicar:hover{opacity:.85}
+        /* ── MODO TABS ── */
+        .cz-mode{display:flex;gap:.4rem;margin-bottom:.9rem;align-items:center}
+        .cz-mode-lbl{font-size:.68rem;color:var(--muted);margin-right:.3rem;white-space:nowrap}
+        .cz-mtab{padding:.35rem .85rem;border-radius:20px;font-size:.72rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s}
+        .cz-mtab.on{background:#0d1f3c;color:#4ade80;border-color:#0d1f3c}
+        /* ── CANAL CARD ── */
+        .cz-canal{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:.7rem;box-shadow:var(--shadow)}
+        .cz-canal-head{padding:.65rem 1.1rem;display:flex;align-items:center;gap:.6rem;cursor:pointer}
+        .cz-canal-head .cn-logo{font-size:1rem}
+        .cz-canal-head .cn-nome{font-size:.82rem;font-weight:700;flex:1}
+        .cz-canal-head .cn-resumo{font-size:.72rem;color:var(--muted);font-family:'Roboto Mono',monospace}
+        .cz-canal-body{padding:.8rem 1.1rem 1rem;border-top:1px solid var(--border)}
+        .cz-canal-inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.9rem}
+        .cz-canal-input-group{display:flex;flex-direction:column;gap:.25rem}
+        .cz-canal-input-group label{font-size:.6rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+        .cz-canal-input-group .ci-wrap{display:flex;align-items:center;border:1px solid var(--border);border-radius:6px;background:var(--surface2);overflow:hidden}
+        .cz-canal-input-group .ci-pre{padding:0 .45rem;font-size:.68rem;color:var(--muted2);font-weight:600;flex-shrink:0;border-right:1px solid var(--border)}
+        .cz-canal-input-group input{border:none;background:transparent;flex:1;padding:.38rem .5rem;color:var(--text);font-family:'Roboto Mono',monospace;font-size:.78rem;outline:none;min-width:0}
+        .cz-canal-input-group input:focus{background:rgba(59,130,246,.04)}
+        .cz-metricas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+        .cz-metric{background:var(--surface2);border-radius:8px;padding:.65rem .9rem;border:1px solid var(--border)}
+        .cz-metric .cm-lbl{font-size:.58rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
+        .cz-metric .cm-pct{font-size:1.5rem;font-weight:800;font-family:'Roboto Condensed',sans-serif;line-height:1}
+        .cz-metric .cm-val{font-size:.68rem;color:var(--muted);margin-top:.15rem;font-family:'Roboto Mono',monospace}
+        .cz-metric.destaque{background:linear-gradient(135deg,#0d1f3c,#1e3a6e);border-color:#1e3a6e}
+        .cz-metric.destaque .cm-lbl{color:#7dd3fc}
+        .cz-metric.destaque .cm-pct{color:#4ade80}
+        .cz-metric.destaque .cm-val{color:#93c5fd}
+        .cz-min{font-size:.72rem;color:var(--muted);margin-top:.6rem;font-family:'Roboto Mono',monospace}
+        .cz-min strong{color:var(--accent3)}
+        .cz-promo-row{display:flex;align-items:center;gap:.5rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)}
+        .cz-promo-lbl{font-size:.68rem;color:var(--muted);white-space:nowrap}
+        .cz-promo-cheio{font-size:.78rem;font-family:'Roboto Mono',monospace;color:var(--muted);text-decoration:line-through}
+        .cz-off-badge{background:#ef4444;color:#fff;border-radius:4px;padding:.1rem .38rem;font-size:.62rem;font-weight:800}
+        .cz-promo-final{font-size:1rem;font-weight:800;font-family:'Roboto Condensed',monospace;color:var(--text)}
+        .cz-arrow{color:var(--muted);font-size:.8rem}
+        .cz-btn-salvar{margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.35rem .8rem;font-size:.68rem;font-weight:700;cursor:pointer;color:var(--text);transition:all .15s}
+        .cz-btn-salvar:hover{border-color:var(--accent);color:var(--accent)}
+        /* CANAL ML yellow header */
+        .cz-canal-head.ml-classico{background:#f4b942}
+        .cz-canal-head.ml-premium{background:#3b82f6}.cz-canal-head.ml-premium .cn-nome,.cz-canal-head.ml-premium .cn-resumo{color:#fff}
+        .cz-canal-head.shopee{background:#ee4d2d}.cz-canal-head.shopee .cn-nome,.cz-canal-head.shopee .cn-resumo{color:#fff}
+        </style>
+
+        <!-- CARD ESCURO: DADOS DO PRODUTO -->
+        <div class="cz-dark">
+          <div class="cz-lbl">dados do produto</div>
+          <div class="cz-fields">
+            <div class="cz-field"><label>nome do produto</label><input type="text" id="cz-nome" placeholder="ex: Seringa Medix 3ml"></div>
+            <div class="cz-field"><label>id / sku</label><input type="text" id="cz-sku" placeholder="ex: SER3ML"></div>
+            <div class="cz-field" style="grid-column:span 2;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.6rem">
+              <div class="cz-field"><label>custo do produto</label><div class="pre"><span>R$</span><input type="number" id="cz-custo" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+              <div class="cz-field"><label>embalagem + etiqueta</label><div class="pre"><span>R$</span><input type="number" id="cz-embal" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+              <div class="cz-field"><label>imposto / DAS</label><div class="pre"><span>%</span><input type="number" id="cz-imp" step="0.01" min="0" max="100" value="16.15" oninput="czCalc()"></div></div>
+              <div class="cz-field"><label>outros custos</label><div class="pre"><span>R$</span><input type="number" id="cz-outros" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+            </div>
+          </div>
+          <div class="cz-concorrente">
+            <label>preço do concorrente — <em style="color:#94a3b8;font-style:normal">aplica em todos os canais de uma vez</em></label>
+            <div class="pre"><span>R$</span><input type="number" id="cz-concorrente" step="0.01" min="0" placeholder="0,00" oninput="czAplicarConcorrente()"></div>
+            <button class="cz-btn-aplicar" onclick="czAplicarConcorrente(true)">aplicar em todos</button>
+          </div>
+        </div>
+
+        <!-- MODO -->
+        <div class="cz-mode">
+          <span class="cz-mode-lbl">calcular por:</span>
+          <button class="cz-mtab on" id="czm-preco" onclick="czSetMode('preco',this)">preço de venda</button>
+          <button class="cz-mtab" id="czm-margem" onclick="czSetMode('margem',this)">margem desejada</button>
+          <span style="margin-left:auto;font-size:.68rem;color:var(--muted)">canais visíveis:</span>
+          <button class="cz-mtab on" id="czch-mlc" onclick="czToggleCanal('mlc',this)" style="margin-left:.3rem">ML Clássico</button>
+          <button class="cz-mtab on" id="czch-mlp" onclick="czToggleCanal('mlp',this)">ML Premium</button>
+          <button class="cz-mtab on" id="czch-sh" onclick="czToggleCanal('sh',this)">Shopee</button>
+        </div>
+
+        <!-- CANAIS -->
+        <div id="czcanal-mlc">
+          <div class="cz-canal">
+            <div class="cz-canal-head ml-classico">
+              <span class="cn-logo">🛒</span><span class="cn-nome">Clássico Mercado Livre</span>
+              <span class="cn-resumo" id="czr-mlc-resumo">—</span>
+            </div>
+            <div class="cz-canal-body">
+              <div class="cz-canal-inputs">
+                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlc-preco" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>comissão</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlc-com" step="0.1" value="11" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>frete</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlc-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>marketing</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlc-mkt" step="0.1" min="0" value="0" oninput="czCalc()"></div></div>
+              </div>
+              <div class="cz-metricas" id="czm-mlc">
+                <div class="cz-metric"><div class="cm-lbl">custos marketplace</div><div class="cm-pct" id="czm-mlc-cpct">—</div><div class="cm-val" id="czm-mlc-cval">—</div></div>
+                <div class="cz-metric"><div class="cm-lbl">custos totais da venda</div><div class="cm-pct" id="czm-mlc-tpct">—</div><div class="cm-val" id="czm-mlc-tval">—</div></div>
+                <div class="cz-metric destaque"><div class="cm-lbl">margem de contribuição</div><div class="cm-pct" id="czm-mlc-mpct">—</div><div class="cm-val" id="czm-mlc-mval">—</div></div>
+              </div>
+              <div class="cz-min" id="czm-mlc-min"></div>
+              <div class="cz-promo-row" id="czm-mlc-promo" style="display:none">
+                <span class="cz-promo-lbl">preço cheio</span>
+                <span class="cz-promo-cheio" id="czp-mlc-cheio"></span>
+                <span class="cz-off-badge" id="czp-mlc-off"></span>
+                <span class="cz-arrow">→</span>
+                <span class="cz-promo-lbl">você vende por</span>
+                <span class="cz-promo-final" id="czp-mlc-final"></span>
+                <button class="cz-btn-salvar">+ salvar precificação</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="czcanal-mlp">
+          <div class="cz-canal">
+            <div class="cz-canal-head ml-premium">
+              <span class="cn-logo">⭐</span><span class="cn-nome">Premium Mercado Livre</span>
+              <span class="cn-resumo" id="czr-mlp-resumo">—</span>
+            </div>
+            <div class="cz-canal-body">
+              <div class="cz-canal-inputs">
+                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlp-preco" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>comissão</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlp-com" step="0.1" value="16" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>frete</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-mlp-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>marketing</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-mlp-mkt" step="0.1" min="0" value="0" oninput="czCalc()"></div></div>
+              </div>
+              <div class="cz-metricas">
+                <div class="cz-metric"><div class="cm-lbl">custos marketplace</div><div class="cm-pct" id="czm-mlp-cpct">—</div><div class="cm-val" id="czm-mlp-cval">—</div></div>
+                <div class="cz-metric"><div class="cm-lbl">custos totais da venda</div><div class="cm-pct" id="czm-mlp-tpct">—</div><div class="cm-val" id="czm-mlp-tval">—</div></div>
+                <div class="cz-metric destaque"><div class="cm-lbl">margem de contribuição</div><div class="cm-pct" id="czm-mlp-mpct">—</div><div class="cm-val" id="czm-mlp-mval">—</div></div>
+              </div>
+              <div class="cz-min" id="czm-mlp-min"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="czcanal-sh">
+          <div class="cz-canal">
+            <div class="cz-canal-head shopee">
+              <span class="cn-logo">🛍️</span><span class="cn-nome">Shopee</span>
+              <span class="cn-resumo" id="czr-sh-resumo">—</span>
+            </div>
+            <div class="cz-canal-body">
+              <div class="cz-canal-inputs">
+                <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-preco" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>comissão</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-com" step="0.1" value="14" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>frete</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group"><label>taxa transação</label><div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-tx" step="0.1" min="0" value="2" oninput="czCalc()"></div></div>
+              </div>
+              <div class="cz-metricas">
+                <div class="cz-metric"><div class="cm-lbl">custos marketplace</div><div class="cm-pct" id="czm-sh-cpct">—</div><div class="cm-val" id="czm-sh-cval">—</div></div>
+                <div class="cz-metric"><div class="cm-lbl">custos totais da venda</div><div class="cm-pct" id="czm-sh-tpct">—</div><div class="cm-val" id="czm-sh-tval">—</div></div>
+                <div class="cz-metric destaque"><div class="cm-lbl">margem de contribuição</div><div class="cm-pct" id="czm-sh-mpct">—</div><div class="cm-val" id="czm-sh-mval">—</div></div>
+              </div>
+              <div class="cz-min" id="czm-sh-min"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </div>
 </div>
@@ -555,7 +754,7 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='';
 const CLIENT_ID='6033160622171924',REDIRECT_URI='https://htembalagem.com.br/painel';
 let accessToken=localStorage.getItem('ml_token')||'',allOrders=[],allShipments={},userId='';
-const PM={dashboard:{t:'Dashboard',s:'Visão geral das suas vendas'},orders:{t:'Pedidos',s:'Todos os pedidos recentes'},sep:{t:'Lista de Separação',s:'Agência e Flex — excluindo Full'},insights:{t:'Insights',s:'Análise de vendas e produtos'},items:{t:'Produtos',s:'Catálogo de produtos ativos'},metricas:{t:'Métricas por Anúncio',s:'Análise de vendas por produto'},promocoes:{t:'Promoções',s:'Anúncios em promoção e oportunidades'}};
+const PM={dashboard:{t:'Dashboard',s:'Visão geral das suas vendas'},orders:{t:'Pedidos',s:'Todos os pedidos recentes'},sep:{t:'Lista de Separação',s:'Agência e Flex — excluindo Full'},insights:{t:'Insights',s:'Análise de vendas e produtos'},items:{t:'Produtos',s:'Catálogo de produtos ativos'},metricas:{t:'Métricas por Anúncio',s:'Análise de vendas por produto'},promocoes:{t:'Promoções',s:'Anúncios em promoção e oportunidades'},calc:{t:'Calculadora de Preços',s:'Precificação multi-canal — ML, Shopee'}};
 const IMP_PADRAO=16.15;
 const CUSTOS_BASE={
 'ALGQUACRE100':10.40,'CUPCMDXK1K':17.50,
@@ -620,6 +819,19 @@ async function exchangeCode(){
 function connectWithToken(){const t=document.getElementById('inp-token').value.trim();if(!t){showErr('Cole o token.');return;}accessToken=t;localStorage.setItem('ml_token',t);enterApp();}
 function showErr(m){document.getElementById('err-msg').innerHTML='<div class="err-box">'+m+'</div>';}
 function logout(){localStorage.removeItem('ml_token');localStorage.removeItem('ml_refresh');accessToken='';allOrders=[];userId='';document.getElementById('app-screen').classList.remove('on');document.getElementById('auth-screen').style.display='flex';}
+
+function enterCalcOnly(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').classList.add('on');
+  document.getElementById('tb-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+  // Esconde itens que precisam de ML
+  document.querySelectorAll('.nav-btn').forEach(function(b){
+    if(b.textContent.match(/Dashboard|Pedidos|Separação|Insights|Produtos|Métricas|Promoções/))
+      b.style.opacity='.35',b.style.pointerEvents='none';
+  });
+  showPanel('calc', document.querySelector('[onclick*="calc"]'));
+  document.getElementById('u-name').textContent='Modo Calculadora';
+}
 
 async function enterApp(){
   document.getElementById('auth-screen').style.display='none';
@@ -1883,6 +2095,93 @@ async function loadPromocoes(){
   }
 }
 
+
+/* ════════════════════════════════════════
+   CALCULADORA DE PREÇOS
+   ════════════════════════════════════════ */
+var czMode='preco';
+var czCanais={mlc:true,mlp:true,sh:true};
+
+function czSetMode(m,el){
+  czMode=m;
+  document.querySelectorAll('.cz-mtab[id^="czm-"]').forEach(b=>b.classList.remove('on'));
+  if(el)el.classList.add('on');
+  czCalc();
+}
+
+function czToggleCanal(c,el){
+  czCanais[c]=!czCanais[c];
+  el.classList.toggle('on',czCanais[c]);
+  document.getElementById('czcanal-'+c).style.display=czCanais[c]?'':'none';
+}
+
+function czAplicarConcorrente(forcar){
+  var v=parseFloat(document.getElementById('cz-concorrente').value)||0;
+  if(!v)return;
+  ['mlc','mlp','sh'].forEach(function(c){
+    var el=document.getElementById('czv-'+c+'-preco');
+    if(el)el.value=v.toFixed(2);
+  });
+  czCalc();
+}
+
+function czN(id){return parseFloat(document.getElementById(id)&&document.getElementById(id).value)||0;}
+
+function czCalcCanal(canal,preco,com,frete,extra){
+  var custo=czN('cz-custo');
+  var embal=czN('cz-embal');
+  var imp=czN('cz-imp')/100;
+  var outros=czN('cz-outros');
+  var custoTotal=custo+embal+outros;
+
+  if(!preco)return null;
+  var impVal=preco*imp;
+  var comVal=preco*(com/100);
+  var mktVal=preco*(extra/100);
+  var custoMkt=comVal+frete+mktVal;
+  var custoTotalVenda=custoTotal+impVal+custoMkt;
+  var lucro=preco-custoTotalVenda;
+  var margem=preco>0?(lucro/preco)*100:0;
+  var pctMkt=preco>0?(custoMkt/preco)*100:0;
+  var pctTotal=preco>0?(custoTotalVenda/preco)*100:0;
+  var precoMin=custoTotal/(1-imp-com/100-extra/100-(frete/preco||0));
+  return{preco,lucro,margem,pctMkt,pctTotal,custoMkt,custoTotalVenda,impVal,comVal,mktVal,precoMin:Math.max(0,precoMin)};
+}
+
+function czFmt(n){return'R$ '+n.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+function czPct(n){return n.toFixed(1)+'%'}
+function czColor(m){return m>=25?'#4ade80':m>=10?'#fbbf24':'#f87171'}
+
+function czRenderCanal(id,preco,com,frete,extra){
+  var r=czCalcCanal(id,preco,com,frete,extra);
+  var pfx='czm-'+id+'-';
+  if(!r){
+    [pfx+'cpct',pfx+'cval',pfx+'tpct',pfx+'tval',pfx+'mpct',pfx+'mval'].forEach(function(x){
+      var el=document.getElementById(x);if(el)el.textContent='—';
+    });
+    var rm=document.getElementById(pfx+'min');if(rm)rm.innerHTML='';
+    var rr=document.getElementById('czr-'+id+'-resumo');if(rr)rr.textContent='—';
+    return;
+  }
+  var set=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  set(pfx+'cpct',czPct(r.pctMkt));
+  set(pfx+'cval','- '+czFmt(r.custoMkt));
+  set(pfx+'tpct',czPct(r.pctTotal));
+  set(pfx+'tval','- '+czFmt(r.custoTotalVenda));
+  set(pfx+'mpct',czPct(r.margem));
+  var mEl=document.getElementById(pfx+'mpct');if(mEl)mEl.style.color=czColor(r.margem);
+  set(pfx+'mval',czFmt(r.lucro));
+  var mn=document.getElementById(pfx+'min');
+  if(mn)mn.innerHTML='preço mínimo sem prejuízo: <strong>'+czFmt(r.precoMin)+'</strong>';
+  var rs=document.getElementById('czr-'+id+'-resumo');
+  if(rs)rs.textContent='margem '+czPct(r.margem)+' • lucro '+czFmt(r.lucro);
+}
+
+function czCalc(){
+  czRenderCanal('mlc',czN('czv-mlc-preco'),czN('czv-mlc-com'),czN('czv-mlc-frete'),czN('czv-mlc-mkt'));
+  czRenderCanal('mlp',czN('czv-mlp-preco'),czN('czv-mlp-com'),czN('czv-mlp-frete'),czN('czv-mlp-mkt'));
+  czRenderCanal('sh',czN('czv-sh-preco'),czN('czv-sh-com'),czN('czv-sh-frete'),czN('czv-sh-tx'));
+}
 
 function showPanel(n,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
