@@ -2455,6 +2455,17 @@ function czCalc(){
   czRenderShopee();
 }
 
+// fallback para mobile: change dispara quando teclado fecha
+document.addEventListener('change',function(e){
+  var t=e.target;
+  if(!t.closest||!t.closest('#panel-calc'))return;
+  var fn=t.getAttribute('oninput')||'';
+  if(!fn||fn.indexOf('czPctMask')!==-1)return;
+  if(fn.indexOf('czTriggerFrete')!==-1)czTriggerFrete();
+  else if(fn.indexOf('czShopeeAuto')!==-1)czShopeeAuto();
+  else if(fn.indexOf('czCalc')!==-1)czCalc();
+});
+
 function showPanel(n,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
