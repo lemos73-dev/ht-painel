@@ -748,17 +748,27 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
               <div class="cz-canal-inputs">
                 <div class="cz-canal-input-group"><label>preço de venda</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-preco" step="0.01" min="0" placeholder="0,00" oninput="czShopeeAuto()"></div></div>
                 <div class="cz-canal-input-group">
+                  <label>desconto Shopee <span style="font-size:.58rem;color:#ee4d2d">(reduz base tributável)</span></label>
+                  <div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-desc" step="1" min="0" max="100" placeholder="0" oninput="czShopeeAuto()"></div>
+                </div>
+                <div class="cz-canal-input-group">
                   <label>comissão <span id="czv-sh-com-lbl" style="font-size:.58rem;color:#ee4d2d;font-weight:700"></span></label>
-                  <div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-com" step="0.1" value="20" oninput="czCalc()" readonly style="background:rgba(238,77,45,.04)"></div>
+                  <div class="ci-wrap"><span class="ci-pre">%</span><input type="number" id="czv-sh-com" step="0.1" value="20" readonly style="background:rgba(238,77,45,.04)"></div>
                 </div>
                 <div class="cz-canal-input-group">
                   <label>taxa fixa</label>
                   <div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-fixa" step="0.01" min="0" value="4" readonly style="background:rgba(238,77,45,.04)"></div>
                 </div>
-                <div class="cz-canal-input-group"><label>frete (manual)</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
               </div>
-              <div style="font-size:.65rem;color:var(--muted);margin-bottom:.6rem;padding:.4rem .6rem;background:rgba(238,77,45,.04);border-radius:5px;border:1px solid rgba(238,77,45,.12)" id="czv-sh-info">
-                Subsídio Pix: <strong id="czv-sh-pix">—</strong> &nbsp;|&nbsp; Comissão calculada automaticamente pela faixa de preço Shopee
+              <div class="cz-canal-inputs" style="margin-top:.5rem">
+                <div class="cz-canal-input-group"><label>frete (manual)</label><div class="ci-wrap"><span class="ci-pre">R$</span><input type="number" id="czv-sh-frete" step="0.01" min="0" placeholder="0,00" oninput="czCalc()"></div></div>
+                <div class="cz-canal-input-group" id="czv-sh-base-wrap" style="display:none">
+                  <label>base tributável</label>
+                  <div class="ci-wrap" style="background:rgba(238,77,45,.04)"><span class="ci-pre">R$</span><input type="number" id="czv-sh-base" readonly style="background:transparent;color:#ee4d2d;font-weight:700"></div>
+                </div>
+              </div>
+              <div style="font-size:.65rem;color:var(--muted);margin-bottom:.6rem;margin-top:.5rem;padding:.4rem .6rem;background:rgba(238,77,45,.04);border-radius:5px;border:1px solid rgba(238,77,45,.12)">
+                Subsídio Pix: <strong id="czv-sh-pix">—</strong> &nbsp;|&nbsp; <span id="czv-sh-desc-info">Comissão calculada automaticamente pela faixa de preço Shopee</span>
               </div>
               <div class="cz-metricas">
                 <div class="cz-metric"><div class="cm-lbl">custos marketplace</div><div class="cm-pct" id="czm-sh-cpct">—</div><div class="cm-val" id="czm-sh-cval">—</div></div>
@@ -2319,40 +2329,56 @@ function czRenderCanal(id,preco,com,frete,extra){
 
 function czShopeeAuto(){
   var preco=czN('czv-sh-preco');
-  var t=czShopeeComissao(preco);
+  var desc=czN('czv-sh-desc');
+  // base tributável = preço com desconto aplicado
+  var base=desc>0?preco*(1-desc/100):preco;
+  var t=czShopeeComissao(base);
   var comEl=document.getElementById('czv-sh-com');
   var fixaEl=document.getElementById('czv-sh-fixa');
   var lblEl=document.getElementById('czv-sh-com-lbl');
   var pixEl=document.getElementById('czv-sh-pix');
+  var baseWrap=document.getElementById('czv-sh-base-wrap');
+  var baseEl=document.getElementById('czv-sh-base');
+  var infoEl=document.getElementById('czv-sh-desc-info');
   if(comEl)comEl.value=t.pct;
   if(fixaEl)fixaEl.value=t.fixa;
-  if(lblEl)lblEl.textContent=preco>0?'(automático)':'';
+  if(lblEl)lblEl.textContent=base>0?'(automático)':'';
   if(pixEl)pixEl.textContent=t.pix>0?t.pix+'%':'não aplicável';
+  // mostra base tributável quando há desconto
+  if(baseWrap)baseWrap.style.display=desc>0?'block':'none';
+  if(baseEl&&desc>0)baseEl.value=base.toFixed(2);
+  if(infoEl)infoEl.textContent=desc>0
+    ?'Desconto de '+desc+'% → base tributável R$ '+base.toFixed(2).replace('.',',')
+    :'Comissão calculada automaticamente pela faixa de preço Shopee';
   czRenderShopee();
 }
 
 function czCalcShopee(preco){
-  // Shopee: comissão % sobre preço + taxa fixa + frete manual
+  // Shopee: comissão + imposto incidem sobre base (preço com desconto)
   var custo=czN('cz-custo');
   var embal=czN('cz-embal');
   var imp=czGetPct('cz-imp')/100;
   var outros=czN('cz-outros');
   var custoTotal=custo+embal+outros;
   if(!preco)return null;
-  var t=czShopeeComissao(preco);
+  var desc=czN('czv-sh-desc');
+  var base=desc>0?preco*(1-desc/100):preco;  // base tributável
+  var t=czShopeeComissao(base);
   var frete=czN('czv-sh-frete');
-  var impVal=preco*imp;
-  var comVal=preco*(t.pct/100);
+  var impVal=base*imp;           // imposto sobre a base tributável
+  var comVal=base*(t.pct/100);   // comissão sobre a base tributável
   var fixa=t.fixa;
   var custoMkt=comVal+fixa+frete;
   var custoTotalVenda=custoTotal+impVal+custoMkt;
-  var lucro=preco-custoTotalVenda;
+  var lucro=preco-custoTotalVenda;  // lucro = preço cheio - todos os custos
   var margem=preco>0?(lucro/preco)*100:0;
   var pctMkt=preco>0?(custoMkt/preco)*100:0;
   var pctTotal=preco>0?(custoTotalVenda/preco)*100:0;
-  var taxaTotal=imp+t.pct/100;
-  var precoMin=taxaTotal<1?(custoTotal+fixa+frete)/(1-taxaTotal):0;
-  return{preco,lucro,margem,pctMkt,pctTotal,custoMkt,custoTotalVenda,precoMin:Math.max(0,precoMin)};
+  var taxaBase=imp+t.pct/100;
+  // preço mínimo: resolvido sobre preço cheio
+  var fatorDesc=desc>0?(1-desc/100):1;
+  var precoMin=taxaBase*fatorDesc<1?(custoTotal+fixa+frete)/(1-taxaBase*fatorDesc):0;
+  return{preco,base,lucro,margem,pctMkt,pctTotal,custoMkt,custoTotalVenda,precoMin:Math.max(0,precoMin)};
 }
 
 function czRenderShopee(){
