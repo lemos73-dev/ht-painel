@@ -634,14 +634,17 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         .cz-canal-head::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.08) 0%,transparent 60%);pointer-events:none}
         .cz-canal-logo{height:28px;display:flex;align-items:center;flex-shrink:0}
         .cz-canal-logo svg{height:100%;width:auto}
-        .cz-canal-head.ml-classico{background:linear-gradient(135deg,#f4b942 0%,#f0a500 100%)}
+        @keyframes czPulseML{0%,100%{background:linear-gradient(135deg,#f4b942 0%,#f0a500 100%)}50%{background:linear-gradient(135deg,#c98a1a 0%,#a06800 100%)}}
+        @keyframes czPulsePrem{0%,100%{background:linear-gradient(135deg,#1a56db 0%,#1e40af 100%)}50%{background:linear-gradient(135deg,#0e2d75 0%,#0c1f55 100%)}}
+        @keyframes czPulseSh{0%,100%{background:linear-gradient(135deg,#ee4d2d 0%,#c73b1c 100%)}50%{background:linear-gradient(135deg,#8a2010 0%,#6b1509 100%)}}
+        .cz-canal-head.ml-classico{animation:czPulseML 3s ease-in-out infinite}
         .cz-canal-head.ml-classico .cn-nome{color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.3)}
         .cz-canal-head.ml-classico .cn-resumo{color:rgba(0,0,0,.55)}
         .cz-canal-head.ml-classico .cz-badge{background:rgba(0,0,0,.12);color:#4a2e00;border-radius:10px;padding:.1rem .5rem;font-size:.6rem;font-weight:700}
-        .cz-canal-head.ml-premium{background:linear-gradient(135deg,#1a56db 0%,#1e40af 100%)}
+        .cz-canal-head.ml-premium{animation:czPulsePrem 3s ease-in-out infinite}
         .cz-canal-head.ml-premium .cn-nome,.cz-canal-head.ml-premium .cn-resumo{color:#fff}
         .cz-canal-head.ml-premium .cz-badge{background:rgba(255,255,255,.15);color:#fff;border-radius:10px;padding:.1rem .5rem;font-size:.6rem;font-weight:700}
-        .cz-canal-head.shopee{background:linear-gradient(135deg,#ee4d2d 0%,#c73b1c 100%)}
+        .cz-canal-head.shopee{animation:czPulseSh 3s ease-in-out infinite}
         .cz-canal-head.shopee .cn-nome,.cz-canal-head.shopee .cn-resumo{color:#fff}
         .cz-canal-head.shopee .cz-badge{background:rgba(255,255,255,.15);color:#fff;border-radius:10px;padding:.1rem .5rem;font-size:.6rem;font-weight:700}
         /* destaque card maior */
