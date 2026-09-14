@@ -2378,7 +2378,7 @@ function czShopeeAuto(){
   var desc=czN('czv-sh-desc');
   // base tributável = preço com desconto aplicado
   var base=desc>0?preco*(1-desc/100):preco;
-  var t=czShopeeComissao(base);
+  var t=czShopeeComissao(preco); // faixa sempre pelo preço cheio
   var comEl=document.getElementById('czv-sh-com');
   var fixaEl=document.getElementById('czv-sh-fixa');
   var lblEl=document.getElementById('czv-sh-com-lbl');
@@ -2409,7 +2409,7 @@ function czCalcShopee(preco){
   if(!preco)return null;
   var desc=czN('czv-sh-desc');
   var base=desc>0?preco*(1-desc/100):preco;  // base tributável
-  var t=czShopeeComissao(base);
+  var t=czShopeeComissao(preco); // faixa pelo preço cheio; percentuais aplicam na base
   var frete=czN('czv-sh-frete');
   var impVal=base*imp;           // imposto sobre a base tributável
   var comVal=base*(t.pct/100);   // comissão sobre a base tributável
