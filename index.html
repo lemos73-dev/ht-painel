@@ -267,11 +267,22 @@ tr:hover td{background:#f8faff}
   .cz-concorrente .pre{max-width:100%!important;flex:1}
 }
 @media(max-width:480px){
-  .cz-fields{grid-template-columns:1fr!important}
-  .cz-fields>div:last-child{grid-column:span 1;display:grid!important;grid-template-columns:1fr 1fr!important}
+  .cz-fields{grid-template-columns:1fr 1fr!important}
+  .cz-fields>div:last-child{grid-column:span 2;display:grid!important;grid-template-columns:1fr 1fr!important}
   .cz-canal-inputs{grid-template-columns:1fr 1fr!important}
-  .cz-metricas{grid-template-columns:1fr!important}
-  .cz-metric.destaque{grid-column:span 1}
+  .cz-metricas{grid-template-columns:1fr 1fr!important}
+  .cz-metric.destaque{grid-column:span 2}
+  .cz-dark{padding:.9rem 1rem}
+  .cz-canal-body{padding:.7rem .8rem .9rem}
+  .cz-canal-input-group input{font-size:.85rem;padding:.45rem .5rem}
+  .cz-canal-input-group .ci-pre{font-size:.75rem;padding:0 .4rem}
+  .cz-canal-input-group label{font-size:.65rem}
+  .cz-metric .cm-pct{font-size:1.3rem}
+  .cz-metric.destaque .cm-pct{font-size:1.7rem}
+  .cz-canal-logo img{height:22px!important}
+  .cz-badge{font-size:.58rem!important;padding:.1rem .4rem!important}
+  .cz-mode{gap:.25rem}
+  .cz-mtab{padding:.3rem .65rem;font-size:.68rem}
 }
 
 /* SEPARAÇÃO — upload PDFs e lista interativa */
