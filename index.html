@@ -597,10 +597,9 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         .cz-mtab.on{background:#0d1f3c;color:#4ade80;border-color:#0d1f3c}
         /* ── CANAL CARD ── */
         .cz-canal{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:.7rem;box-shadow:var(--shadow)}
-        .cz-canal-head{padding:.65rem 1.1rem;display:flex;align-items:center;gap:.6rem;cursor:pointer}
-        .cz-canal-head .cn-logo{font-size:1rem}
-        .cz-canal-head .cn-nome{font-size:.82rem;font-weight:700;flex:1}
-        .cz-canal-head .cn-resumo{font-size:.72rem;color:var(--muted);font-family:'Roboto Mono',monospace}
+        .cz-canal-head{padding:.7rem 1.1rem;display:flex;align-items:center;gap:.6rem;cursor:pointer}
+        .cz-canal-head .cn-nome{font-size:.85rem;font-weight:800;flex:1;letter-spacing:.3px}
+        .cz-canal-head .cn-resumo{font-size:.72rem;font-family:'Roboto Mono',monospace;opacity:.8}
         .cz-canal-body{padding:.8rem 1.1rem 1rem;border-top:1px solid var(--border)}
         .cz-canal-inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.9rem}
         .cz-canal-input-group{display:flex;flex-direction:column;gap:.25rem}
@@ -628,10 +627,28 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         .cz-arrow{color:var(--muted);font-size:.8rem}
         .cz-btn-salvar{margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.35rem .8rem;font-size:.68rem;font-weight:700;cursor:pointer;color:var(--text);transition:all .15s}
         .cz-btn-salvar:hover{border-color:var(--accent);color:var(--accent)}
-        /* CANAL ML yellow header */
-        .cz-canal-head.ml-classico{background:#f4b942}
-        .cz-canal-head.ml-premium{background:#3b82f6}.cz-canal-head.ml-premium .cn-nome,.cz-canal-head.ml-premium .cn-resumo{color:#fff}
-        .cz-canal-head.shopee{background:#ee4d2d}.cz-canal-head.shopee .cn-nome,.cz-canal-head.shopee .cn-resumo{color:#fff}
+        /* CANAL HEADERS com logo */
+        .cz-canal{transition:box-shadow .2s}
+        .cz-canal:hover{box-shadow:0 4px 20px rgba(0,0,0,.12)}
+        .cz-canal-head{padding:.7rem 1.1rem;position:relative;overflow:hidden}
+        .cz-canal-head::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.08) 0%,transparent 60%);pointer-events:none}
+        .cz-canal-logo{height:28px;display:flex;align-items:center;flex-shrink:0}
+        .cz-canal-logo svg{height:100%;width:auto}
+        .cz-canal-head.ml-classico{background:linear-gradient(135deg,#f4b942 0%,#f0a500 100%)}
+        .cz-canal-head.ml-classico .cn-nome{color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.3)}
+        .cz-canal-head.ml-classico .cn-resumo{color:rgba(0,0,0,.55)}
+        .cz-canal-head.ml-classico .cz-badge{background:rgba(0,0,0,.12);color:#4a2e00;border-radius:10px;padding:.1rem .5rem;font-size:.6rem;font-weight:700}
+        .cz-canal-head.ml-premium{background:linear-gradient(135deg,#1a56db 0%,#1e40af 100%)}
+        .cz-canal-head.ml-premium .cn-nome,.cz-canal-head.ml-premium .cn-resumo{color:#fff}
+        .cz-canal-head.ml-premium .cz-badge{background:rgba(255,255,255,.15);color:#fff;border-radius:10px;padding:.1rem .5rem;font-size:.6rem;font-weight:700}
+        .cz-canal-head.shopee{background:linear-gradient(135deg,#ee4d2d 0%,#c73b1c 100%)}
+        .cz-canal-head.shopee .cn-nome,.cz-canal-head.shopee .cn-resumo{color:#fff}
+        .cz-canal-head.shopee .cz-badge{background:rgba(255,255,255,.15);color:#fff;border-radius:10px;padding:.1rem .5rem;font-size:.6rem;font-weight:700}
+        /* destaque card maior */
+        .cz-metric.destaque{background:linear-gradient(135deg,#0d1f3c,#1e3a6e);border-color:#2563eb}
+        .cz-metric.destaque .cm-pct{font-size:2rem}
+        /* dark card melhorado */
+        .cz-dark{background:linear-gradient(160deg,#0d1f3c 0%,#0f2847 100%);border:1px solid #1e3a6e;box-shadow:0 4px 24px rgba(0,0,0,.18)}
         </style>
 
         <!-- CARD ESCURO: DADOS DO PRODUTO -->
@@ -686,7 +703,9 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         <div id="czcanal-mlc">
           <div class="cz-canal">
             <div class="cz-canal-head ml-classico">
-              <span class="cn-logo">🛒</span><span class="cn-nome">Clássico Mercado Livre</span>
+              <span class="cz-canal-logo"><svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg"><ellipse cx="28" cy="28" rx="28" ry="28" fill="#fff2"/><path d="M8 22c0-3.3 2.7-6 6-6h28c3.3 0 6 2.7 6 6v12c0 3.3-2.7 6-6 6H14c-3.3 0-6-2.7-6-6V22z" fill="#1a1a1a" opacity=".08"/><path d="M14 20l6 10 6-10 6 10 6-10v16H14V20z" fill="#1a1a1a" opacity=".55"/></svg></span>
+              <span class="cn-nome">Mercado Livre</span>
+              <span class="cz-badge">Clássico</span>
               <span class="cn-resumo" id="czr-mlc-resumo">—</span>
             </div>
             <div class="cz-canal-body">
@@ -718,7 +737,9 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         <div id="czcanal-mlp">
           <div class="cz-canal">
             <div class="cz-canal-head ml-premium">
-              <span class="cn-logo">⭐</span><span class="cn-nome">Premium Mercado Livre</span>
+              <span class="cz-canal-logo"><svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg"><path d="M14 20l6 10 6-10 6 10 6-10v16H14V20z" fill="#fff" opacity=".8"/></svg></span>
+              <span class="cn-nome">Mercado Livre</span>
+              <span class="cz-badge">Premium</span>
               <span class="cn-resumo" id="czr-mlp-resumo">—</span>
             </div>
             <div class="cz-canal-body">
@@ -741,7 +762,8 @@ tr.sep-ok td.sep-prod-td{text-decoration:line-through}
         <div id="czcanal-sh">
           <div class="cz-canal">
             <div class="cz-canal-head shopee">
-              <span class="cn-logo">🛍️</span><span class="cn-nome">Shopee</span>
+              <span class="cz-canal-logo"><svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg"><path d="M28 8c-5.5 0-10 4.5-10 10v2H14l-2 28h32l-2-28h-4v-2c0-5.5-4.5-10-10-10zm0 4c3.3 0 6 2.7 6 6v2H22v-2c0-3.3 2.7-6 6-6z" fill="#fff" opacity=".9"/></svg></span>
+              <span class="cn-nome">Shopee</span>
               <span class="cn-resumo" id="czr-sh-resumo">—</span>
             </div>
             <div class="cz-canal-body">
